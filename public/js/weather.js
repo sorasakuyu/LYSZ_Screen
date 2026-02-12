@@ -31,7 +31,7 @@ async function initWeather() {
     if (!now) return null;
     const code = now.icon ?? null;
     const condition = now.text ?? null;
-    const temperature = now.feelsLike ?? now.temp ?? null;
+    const temperature = now.temp ?? null;
     return { code, temperature, condition };
   }
 
@@ -80,10 +80,9 @@ async function initWeather() {
     setWeatherBackground(); // 每次刷新天气时同步切换背景
 
     const icon = document.getElementById('weather-icon');
-    const feels = document.getElementById('feels-like');
     const temp = document.getElementById('weather-temp');
     const desc = document.getElementById('weather-desc');
-    if (!icon || !feels || !temp || !desc) return;
+    if (!icon || !temp || !desc) return;
 
     let statusMap = new Map();
     try {
@@ -101,12 +100,11 @@ async function initWeather() {
       const weatherData = await weatherRes.json();
       const current = parseCurrent(weatherData);
       if (!current) throw new Error('missing current');
-      applyWeather({ icon, feels, temp, desc }, statusMap, current);
+      applyWeather({ icon, temp, desc }, statusMap, current);
 
       // Alerts removed per request
     } catch (e) {
       console.warn('天气获取失败，保留占位', e);
-      if (feels) feels.textContent = '--°C';
       if (temp) temp.textContent = '--°C';
       if (icon) icon.src = `${ICON_BASE}/${FALLBACK_CODE}.svg`;
       if (desc) desc.textContent = '未知';
