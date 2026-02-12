@@ -1,0 +1,17 @@
+.left-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    height: 872.07px;
+    justify-content: center;
+}
+
+.thumb {
+    height: 200px;
+    border-radius: 14px;
+    background: rgba(200, 200, 200, 0.5);
+    border-radius: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(6px);
+}
+

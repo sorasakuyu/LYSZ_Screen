@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>倒数日管理</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "PingFang SC", "Microsoft YaHei"; margin: 0; }
+    header { padding: 16px 20px; border-bottom: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; }
+    h1 { font-size: 18px; margin: 0; }
+    main { padding: 20px; max-width: 980px; margin: 0 auto; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    label { font-size: 13px; color: #555; }
+    input, button { font: inherit; }
+    input[type="text"], input[type="date"] { padding: 8px; border: 1px solid #ccc; border-radius: 6px; min-width: 260px; }
+    button { padding: 8px 12px; border: 1px solid #999; background: #f4f4f4; border-radius: 6px; cursor: pointer; }
+    button.primary { background: #2f7cf6; border-color: #2f7cf6; color: white; }
+    button.danger { background: #e84118; border-color: #e84118; color: white; }
+    button.ghost { background: transparent; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; vertical-align: top; }
+    th { font-weight: 600; color: #444; }
+    .muted { color: #777; font-size: 12px; }
+    .actions { display: flex; gap: 8px; }
+    .empty { text-align: center; color: #777; padding: 24px 8px; }
+    @media (max-width: 640px) {
+      .desktop-only { display: none; }
+      input[type="text"], input[type="date"] { min-width: 200px; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>倒数日管理</h1>
+    <div><button id="refreshBtn" class="ghost">刷新列表</button></div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2 style="font-size:16px;margin:0 0 12px;">新增倒数日</h2>
+      <form id="createForm">
+        <div class="row">
+          <div>
+            <label>内容</label><br />
+            <input type="text" id="contentInput" placeholder="例如：春节、纪念日…" required />
+          </div>
+          <div>
+            <label>结束日期</label><br />
+            <input type="date" id="dateInput" required />
+          </div>
+          <div style="align-self:flex-end;">
+            <button type="submit" class="primary">新增</button>
+          </div>
+        </div>
+        <div id="createStatus" class="status muted"></div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2 style="font-size:16px;margin:0 0 12px;">倒数日列表</h2>
+      <div class="muted" style="margin-bottom:8px;">显示所有条目，按结束日期升序。</div>
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th style="width:64px;">ID</th>
+            <th>内容</th>
+            <th>结束日期</th>
+            <th class="desktop-only">剩余天数</th>
+            <th style="width:200px;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="5" class="empty">加载中…</td></tr>
+        </tbody>
+      </table>
+      <div id="listStatus" class="status muted"></div>
+    </section>
+  </main>
+
+  <script>
+    const API = {
+      list: () => fetchJSON("/days/list"),
+      create: (payload) => fetchJSON("/days", { method: "POST", body: JSON.stringify(payload) }),
+      update: (id, payload) => fetchJSON(`/days/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+      remove: (id) => fetchJSON(`/days/${id}`, { method: "DELETE" }),
+    };
+
+    async function fetchJSON(url, options = {}) {
+      const res = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+      const text = await res.text();
+      let data = null;
+      try { data = text ? JSON.parse(text) : null; } catch {}
+      if (!res.ok) {
+        const msg = (data && (data.detail || data.message)) || `${res.status} ${res.statusText}`;
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    // YYYY-MM-DD => 友好显示
+    function isoDateToDisplay(isoDate) { return isoDate; }
+
+    // 计算剩余天数（按本地日期，不涉及时区）
+    function daysLeftFromISODate(isoDate) {
+      const [y, m, d] = isoDate.split("-").map(Number);
+      const end = new Date(y, m - 1, d); // 本地午夜
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const ms = end - today;
+      const dayMs = 24 * 60 * 60 * 1000;
+      return Math.ceil(ms / dayMs);
+    }
+
+    function setStatus(el, msg, isError = false) {
+      el.textContent = msg || "";
+      el.style.color = isError ? "#e84118" : "#777";
+    }
+
+    function renderRows(items) {
+      const tbody = document.getElementById("tableBody");
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty">暂无数据</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = "";
+      for (const item of items) {
+        const tr = document.createElement("tr");
+        tr.dataset.id = item.id;
+
+        const tdId = document.createElement("td"); tdId.textContent = item.id;
+        const tdContent = document.createElement("td"); tdContent.textContent = item.content;
+        const tdDate = document.createElement("td"); tdDate.textContent = isoDateToDisplay(item.time);
+        const tdDays = document.createElement("td"); tdDays.className = "desktop-only";
+        const dleft = daysLeftFromISODate(item.time);
+        tdDays.textContent = dleft >= 0 ? `${dleft} 天` : `超期 ${Math.abs(dleft)} 天`;
+
+        const tdActions = document.createElement("td"); tdActions.className = "actions";
+
+        const editBtn = document.createElement("button"); editBtn.textContent = "编辑";
+        editBtn.addEventListener("click", () => enterEditMode(tr, item));
+        const delBtn = document.createElement("button"); delBtn.textContent = "删除"; delBtn.className = "danger";
+        delBtn.addEventListener("click", () => onDelete(item.id));
+
+        tdActions.append(editBtn, delBtn);
+        tr.append(tdId, tdContent, tdDate, tdDays, tdActions);
+        tbody.appendChild(tr);
+      }
+    }
+
+    function enterEditMode(tr, item) {
+      const id = item.id;
+      tr.innerHTML = "";
+
+      const tdId = document.createElement("td"); tdId.textContent = id;
+
+      const tdContent = document.createElement("td");
+      const contentInput = document.createElement("input");
+      contentInput.type = "text";
+      contentInput.value = item.content;
+      contentInput.style.minWidth = "200px";
+      tdContent.appendChild(contentInput);
+
+      const tdDate = document.createElement("td");
+      const dateInput = document.createElement("input");
+      dateInput.type = "date";
+      dateInput.value = item.time; // YYYY-MM-DD
+      tdDate.appendChild(dateInput);
+
+      const tdDays = document.createElement("td"); tdDays.className = "desktop-only";
+      tdDays.textContent = daysLeftFromISODate(item.time);
+
+      const tdActions = document.createElement("td"); tdActions.className = "actions";
+      const saveBtn = document.createElement("button");
+      saveBtn.textContent = "保存"; saveBtn.className = "primary";
+      saveBtn.addEventListener("click", async () => {
+        try {
+          const payload = {};
+          const newContent = contentInput.value.trim();
+          const newDate = dateInput.value; // YYYY-MM-DD
+          if (newContent !== item.content) payload.content = newContent;
+          if (newDate && newDate !== item.time) payload.time = newDate;
+          if (!Object.keys(payload).length) { await refreshList(); return; }
+          await API.update(id, payload);
+          await refreshList();
+        } catch (e) {
+          alert("更新失败：" + e.message);
+        }
+      });
+      const cancelBtn = document.createElement("button");
+      cancelBtn.textContent = "取消"; cancelBtn.addEventListener("click", refreshList);
+
+      tdActions.append(saveBtn, cancelBtn);
+      tr.append(tdId, tdContent, tdDate, tdDays, tdActions);
+    }
+
+    async function onDelete(id) {
+      if (!confirm(`确认删除 ID=${id} 的倒数日？`)) return;
+      const statusEl = document.getElementById("listStatus");
+      try {
+        setStatus(statusEl, "正在删除…");
+        await API.remove(id);
+        setStatus(statusEl, "删除成功");
+        await refreshList();
+      } catch (e) {
+        setStatus(statusEl, "删除失败：" + e.message, true);
+      }
+    }
+
+    async function refreshList() {
+      const statusEl = document.getElementById("listStatus");
+      try {
+        setStatus(statusEl, "正在加载…");
+        const items = await API.list();
+        renderRows(items);
+        setStatus(statusEl, `共 ${items.length} 条`);
+      } catch (e) {
+        setStatus(statusEl, "加载失败：" + e.message, true);
+      }
+    }
+
+    document.getElementById("refreshBtn").addEventListener("click", refreshList);
+
+    document.getElementById("createForm").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const statusEl = document.getElementById("createStatus");
+      const content = document.getElementById("contentInput").value.trim();
+      const dateStr = document.getElementById("dateInput").value; // YYYY-MM-DD
+
+      if (!content) { setStatus(statusEl, "请输入内容", true); return; }
+      if (!dateStr) { setStatus(statusEl, "请选择结束日期", true); return; }
+
+      try {
+        setStatus(statusEl, "正在新增…");
+        const payload = { content, time: dateStr };
+        await API.create(payload);
+        setStatus(statusEl, "新增成功");
+        document.getElementById("createForm").reset();
+        await refreshList();
+      } catch (e) {
+        setStatus(statusEl, "新增失败：" + e.message, true);
+      }
+    });
+
+    // 初始加载
+    refreshList();
+  </script>
+</body>
+</html>

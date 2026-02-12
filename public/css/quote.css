@@ -1,0 +1,61 @@
+.quote-card {
+    padding: 28px 32px 16px;
+    height: 872.07px;
+    box-sizing: border-box;
+    backdrop-filter: blur(6px);
+}
+
+.quote-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 12px;
+}
+
+.quote-badge {
+    height: 150px;
+    width: auto;
+    display: block;
+}
+
+.quote-daily {
+    font-family: 'MiSans', Arial, sans-serif;
+    font-size: 50px;
+    font-weight: 600;
+    color: #000000;
+    letter-spacing: 1px;
+    margin-left: 0;
+    display: inline-block;
+    transform: translateY(6px);
+}
+
+.divider {
+    height: 8px;
+    background: #c5151b;
+    margin: 6px 6px 16px;
+}
+
+.quote-text {
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #111;
+    margin: 64px 0 32px; /* 下移正文 */
+    text-align: center;
+}
+
+.quote-meaning {
+    font-size: 32px;
+    line-height: 1.6;
+    color: #111;
+    margin-top: 8px;     /* 释义也下移一点，可按需调整 */
+}
+
+.quote-theme {
+    margin-top: 10px;
+    font-size: 28px;
+    line-height: 1.4;
+    color: #111;
+    text-align: center;
+}

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>添加数据 - /add</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif; margin: 0; padding: 24px; background: #f7f7f7; }
+    .card { max-width: 720px; margin: 0 auto; background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    h1 { font-size: 20px; margin: 0 0 16px; }
+    label { display: block; font-weight: 600; margin: 12px 0 6px; }
+    textarea, input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #d0d7de; border-radius: 8px; font-size: 14px; outline: none; background: #fff; }
+    textarea { min-height: 120px; resize: vertical; }
+    input { height: 40px; }
+    .row { display: flex; gap: 12px; align-items: center; margin-top: 14px; }
+    button { padding: 10px 16px; border: none; border-radius: 8px; background: #0969da; color: #fff; font-weight: 600; cursor: pointer; }
+    button:disabled { background: #9bbcf0; cursor: not-allowed; }
+    .muted { color: #6e7781; font-size: 12px; }
+    .result { margin-top: 16px; padding: 12px; background: #f0f7ff; border: 1px solid #c8e1ff; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; white-space: pre-wrap; }
+    .error { background: #fff5f5; border-color: #ffd6d6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>添加数据到 /add</h1>
+    <p class="muted">提交字段为 <code>content</code> 和 <code>defination</code>（服务端也兼容 <code>definition</code>）。</p>
+
+    <form id="form">
+      <label for="content">内容（content）</label>
+      <textarea id="content" name="content" placeholder="请输入内容..." required></textarea>
+
+      <label for="defination">定义（defination，可选）</label>
+      <textarea id="defination" name="defination" placeholder="可不填"></textarea>
+
+      <label for="theme">主题（theme，可选）</label>
+      <textarea id="theme" name="theme" placeholder="可不填"></textarea>
+
+      <div class="row">
+        <button id="submit" type="submit">提交</button>
+        <button id="reset" type="button">清空</button>
+      </div>
+    </form>
+
+    <div id="result" class="result" style="display:none;"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('form');
+    const submitBtn = document.getElementById('submit');
+    const resetBtn = document.getElementById('reset');
+    const resultEl = document.getElementById('result');
+
+    function showResult(text, isError = false) {
+      resultEl.textContent = text;
+      resultEl.style.display = 'block';
+      resultEl.classList.toggle('error', isError);
+    }
+
+    resetBtn.addEventListener('click', () => {
+      form.reset();
+      resultEl.style.display = 'none';
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const content = document.getElementById('content').value.trim();
+      const defination = document.getElementById('defination').value.trim();
+      const theme = document.getElementById('theme').value.trim();
+      if (!content) {
+        showResult('请填写 content 字段。', true);
+        return;
+      }
+
+      submitBtn.disabled = true;
+      showResult('正在提交...', false);
+
+      try {
+        const payload = { content };
+        if (defination) payload.defination = defination; // 仅在非空时发送
+        if (theme) payload.theme = theme; // 仅在非空时发送
+
+        const resp = await fetch(`${window.location.origin}/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) {
+          showResult(`提交失败（HTTP ${resp.status}）：${data.detail ?? JSON.stringify(data)}`, true);
+        } else {
+          showResult(`提交成功：\n${JSON.stringify(data, null, 2)}`, false);
+          // 可选：成功后清空表单
+          // form.reset();
+        }
+      } catch (err) {
+        showResult(`网络错误：${err}`, true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

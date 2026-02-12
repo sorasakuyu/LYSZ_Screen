@@ -1,0 +1,74 @@
+@font-face {
+	font-family: 'MiSans';
+	src: url('../font/MiSans.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'STXingkai';
+	src: url('../font/STXingkai.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+}
+
+.top-bar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 128px;
+	background: linear-gradient(90deg, #b50f14 0%, #8c080c 100%);
+	overflow: hidden;
+	isolation: isolate;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	padding: 0 10px;
+	box-sizing: border-box;
+}
+
+.logo {
+	height: 120px;
+	width: auto;
+    display: block;
+}
+
+.brand-title {
+    margin-left: 12px;
+    font-family: 'STXingkai', serif;
+    font-size: 85px;
+    color: #ffffff;
+    letter-spacing: 2px;
+    user-select: none;
+}
+
+.time-box {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-family: 'MiSans', Arial, sans-serif;
+    line-height: 1.1;
+}
+
+.time-date {
+    font-size: 36px;
+    color: #ffffff;
+}
+
+.time-clock {
+    font-size: 56px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.main-wrap {
+    width: min(calc(100vw - 18px), 1806.34px);
+    display: grid;
+    grid-template-columns: 220px 775.17px 775.17px;
+    gap: 18px;
+    padding: 18px 0 18px 0;
+    box-sizing: border-box;
+    z-index: 1;
+}
