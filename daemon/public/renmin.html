@@ -79,7 +79,7 @@
         if (defination) payload.defination = defination; // 仅在非空时发送
         if (theme) payload.theme = theme; // 仅在非空时发送
 
-        const resp = await fetch(`${window.location.origin}/add`, {
+        const resp = await fetch(`http://0.0.0.0:9000/renmin/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
