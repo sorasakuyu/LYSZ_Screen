@@ -1,3 +1,10 @@
+@font-face {
+	font-family: 'OpenSans';
+	src: url('../font/Open-Sans-2.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+}
+
 .weather-card {
     display: flex;
     flex-direction: column;
@@ -16,7 +23,7 @@
 .weather-info {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0;
 }
 
 .weather-icon {
@@ -37,6 +44,7 @@
     align-items: center;         /* 让温度居中 */
     gap: 10px;
     padding: 16px 18px;
+    font-family: 'OpenSans', sans-serif;
 }
 
 .feels-label {
@@ -59,15 +67,19 @@
 }
 
 .weather-temp {
-  font-size: 44px;
-  font-weight: 800;
-  color: #000;
-  line-height: 1;
+    font-size: 60px;
+    font-weight: 800;
+    color: #000;
+    font-family: 'OpenSans', sans-serif;
+    line-height: 1;
+    margin: 0;
 }
 
 .weather-desc {
-  font-size: 40px;
-  color: #000000;
+    font-size: 32px;
+    color: #000000;
+    line-height: 1;
+    margin: 0;
 }
 
 .alert-card {
@@ -127,15 +139,8 @@
 }
 
 #weather-card {
+    background: linear-gradient(135deg, #ffe59d80 0%, #9ec5ff80 32%, #9ec5ff80 100%);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-}
-
-#weather-card.day {
-    background-image: url('../img/weather/bkg/day.png');
-}
-
-#weather-card.night {
-    background-image: url('../img/weather/bkg/night.png');
 }

@@ -1,0 +1,1 @@
+curl -X GET --compressed -H 'X-QW-Api-Key: 7ff913a997ea42d5bd3bd8d1840aa0e5' 'https://ny4up3enmw.re.qweatherapi.com/v7/weather/now?location=101120901'

@@ -1,5 +1,6 @@
 (function initWeather() {
-  const API_URL = 'https://60s.viki.moe/v2/weather?query=临沂';
+  const API_URL = 'https://ny4up3enmw.re.qweatherapi.com/v7/weather/now?location=101120901';
+  const API_KEY = '7ff913a997ea42d5bd3bd8d1840aa0e5';
   const STATUS_URL = 'xiaomi_weather_status.json';
   const ICON_BASE = 'img/weather';
   const ALERT_ICON_BASE = 'img/weather/alerts';
@@ -7,10 +8,10 @@
   const FALLBACK_CODE = 99;
   const REFRESH_MS = 10 * 60 * 1000;
 
-  const fetchWithTimeout = (url, ms = 8000) => {
+  const fetchWithTimeout = (url, ms = 8000, options = {}) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), ms);
-    return fetch(url, { signal: ctrl.signal, cache: 'no-store' }).finally(() => clearTimeout(timer));
+    return fetch(url, { signal: ctrl.signal, cache: 'no-store', ...options }).finally(() => clearTimeout(timer));
   };
 
   async function loadStatusMap() {
@@ -27,22 +28,17 @@
   }
 
   function parseCurrent(payload) {
-    const weather = payload?.data?.weather ?? null;
-    if (!weather) return null;
-    const code = weather.condition_code ?? weather.code;
-    const condition = weather.condition ?? null;
-    const temperature = weather.temperature ?? null;
+    if (!payload || payload.code !== '200') return null;
+    const now = payload.now ?? null;
+    if (!now) return null;
+    const code = now.icon ?? null;
+    const condition = now.text ?? null;
+    const temperature = now.feelsLike ?? now.temp ?? null;
     return { code, temperature, condition };
   }
 
   function parseAlert(payload) {
-    const alerts = Array.isArray(payload?.data?.alerts) ? payload.data.alerts : [];
-    if (!alerts.length) return null;
-    const first = alerts[0] ?? {};
-    const level = (first.level || '').toLowerCase();
-    const type = first.type || '';
-    if (!level && !type) return null;
-    return { level, type };
+    return null;
   }
 
   const fmt = (n) => {
@@ -71,8 +67,8 @@
     const safeCode = Number.isFinite(codeNum) ? codeNum : FALLBACK_CODE;
     const desc = statusMap.get(safeCode) ?? current.condition ?? '未知';
     const isDay = isDayTime();
-    const iconName = isDay ? `${safeCode}` : `${safeCode}d`;
-    const fallbackName = isDay ? `${FALLBACK_CODE}` : `${FALLBACK_CODE}d`;
+    const iconName = isDay ? `${safeCode}` : `${safeCode}`;
+    const fallbackName = isDay ? `${FALLBACK_CODE}` : `${FALLBACK_CODE}`;
     const iconSrc = `${ICON_BASE}/${iconName}.svg`;
 
     if (ui.icon) {
@@ -83,7 +79,10 @@
         ui.icon.src = `${ICON_BASE}/${fallbackName}.svg`;
       };
     }
-    if (ui.feels) ui.feels.textContent = `${fmt(current.temperature)}°C`;
+    const tempText = `${fmt(current.temperature)}°`;
+    if (ui.feels) ui.feels.textContent = tempText;
+    if (ui.temp) ui.temp.textContent = tempText;
+    if (ui.desc) ui.desc.textContent = desc;
   }
 
   function applyAlert(ui, alert) {
@@ -134,10 +133,12 @@
 
     const icon = document.getElementById('weather-icon');
     const feels = document.getElementById('feels-like');
+    const temp = document.getElementById('weather-temp');
+    const desc = document.getElementById('weather-desc');
     const alertIcon = document.getElementById('alert-icon');
     const alertTitle = document.getElementById('alert-title');
     const alertDetail = document.getElementById('alert-detail');
-    if (!icon || !feels) return;
+    if (!icon || !feels || !temp || !desc) return;
 
     let statusMap = new Map();
     try {
@@ -147,19 +148,23 @@
     }
 
     try {
-      const res = await fetchWithTimeout(API_URL, 8000);
+      const res = await fetchWithTimeout(API_URL, 8000, {
+        headers: { 'X-QW-Api-Key': API_KEY },
+      });
       if (!res.ok) throw new Error(`api status ${res.status}`);
       const data = await res.json();
       const current = parseCurrent(data);
       if (!current) throw new Error('missing current');
-      applyWeather({ icon, feels }, statusMap, current);
+      applyWeather({ icon, feels, temp, desc }, statusMap, current);
 
       const alert = parseAlert(data);
       applyAlert({ icon: alertIcon, title: alertTitle, detail: alertDetail }, alert);
     } catch (e) {
       console.warn('天气获取失败，保留占位', e);
       if (feels) feels.textContent = '--°C';
+      if (temp) temp.textContent = '--°C';
       if (icon) icon.src = `${ICON_BASE}/${FALLBACK_CODE}.svg`;
+      if (desc) desc.textContent = '未知';
       applyAlert(
         { icon: alertIcon, title: alertTitle, detail: alertDetail },
         null
