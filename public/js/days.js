@@ -1,4 +1,4 @@
-(function initDays() {
+async function initDays() {
   const API_URL = 'http://localhost:9000/days/';
   const ROTATE_MS = 5 * 1000;
 
@@ -68,4 +68,5 @@
   }
 
   window.initDays = load;
-})();
+  return load();
+}

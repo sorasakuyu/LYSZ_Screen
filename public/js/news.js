@@ -1,4 +1,4 @@
-(function(){
+function initNews(){
   const endpoints = [
     'http://localhost:4399/v2/60s'
   ];
@@ -139,4 +139,6 @@
     loadNews();
     scheduleDailyRefresh();
   };
-})();
+
+  return window.initNews();
+}

@@ -1,4 +1,4 @@
-async function Renmin() {
+async function initRenmin() {
   const quoteEl = document.querySelector('.quote-text');
   const meaningEl = document.querySelector('.quote-meaning');
   if (!quoteEl) return;

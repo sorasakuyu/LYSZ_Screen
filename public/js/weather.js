@@ -1,4 +1,4 @@
-(function initWeather() {
+async function initWeather() {
   const API_URL = 'https://ny4up3enmw.re.qweatherapi.com/v7/weather/now?location=101120911';
   const API_KEY = '7ff913a997ea42d5bd3bd8d1840aa0e5';
   const STATUS_URL = 'xiaomi_weather_status.json';
@@ -117,4 +117,6 @@
     loadWeather();
     setInterval(loadWeather, REFRESH_MS);
   };
-})();
+
+  return window.initWeather();
+}
