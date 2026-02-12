@@ -1,10 +1,8 @@
 (function initWeather() {
-  const API_URL = 'https://ny4up3enmw.re.qweatherapi.com/v7/weather/now?location=101120901';
+  const API_URL = 'https://ny4up3enmw.re.qweatherapi.com/v7/weather/now?location=101120911';
   const API_KEY = '7ff913a997ea42d5bd3bd8d1840aa0e5';
   const STATUS_URL = 'xiaomi_weather_status.json';
   const ICON_BASE = 'img/weather';
-  const ALERT_ICON_BASE = 'img/weather/alerts';
-  const ALERT_ICONS = { blue: 'blue.png', yellow: 'yellow.png', red: 'red.png', orange: 'orange.png' };
   const FALLBACK_CODE = 99;
   const REFRESH_MS = 10 * 60 * 1000;
 
@@ -37,29 +35,9 @@
     return { code, temperature, condition };
   }
 
-  function parseAlert(payload) {
-    return null;
-  }
-
   const fmt = (n) => {
     const num = Number(n);
     return Number.isFinite(num) ? Math.round(num).toString() : '--';
-  };
-
-  const refreshMarquee = (...els) => {
-    requestAnimationFrame(() => {
-      els.forEach((el) => {
-        if (!el) return;
-        el.classList.remove('alert-marquee');
-        el.style.removeProperty('--scroll-distance');
-        const overflow = el.scrollWidth - el.clientWidth;
-        if (overflow > 2) {
-          el.style.setProperty('--scroll-distance', `${overflow}px`);
-          void el.offsetWidth; // restart animation
-          el.classList.add('alert-marquee');
-        }
-      });
-    });
   };
 
   function applyWeather(ui, statusMap, current) {
@@ -85,36 +63,6 @@
     if (ui.desc) ui.desc.textContent = desc;
   }
 
-  function applyAlert(ui, alert) {
-    if (!ui.icon || !ui.title || !ui.detail) return;
-    const defaults = {
-      title: '无预警',
-      detail: '一切安好',
-      icon: `${ALERT_ICON_BASE}/blue.png`,
-    };
-
-    if (!alert) {
-      ui.icon.style.display = 'none';            // 无预警时隐藏图标
-      ui.title.textContent = defaults.title;
-      ui.detail.textContent = defaults.detail;
-      refreshMarquee(ui.title, ui.detail);
-      return;
-    }
-
-    const levelKey = (alert.level || '').toLowerCase();
-    const iconFile = ALERT_ICONS[levelKey];
-    ui.icon.style.display = '';                   // 有预警时显示图标
-    ui.icon.src = iconFile ? `${ALERT_ICON_BASE}/${iconFile}` : defaults.icon;
-    ui.icon.alt = alert.type || '天气预警';
-    ui.icon.onerror = () => {
-      ui.icon.onerror = null;
-      ui.icon.src = defaults.icon;
-    };
-    ui.title.textContent = alert.level ? `${alert.level}预警` : '天气预警';
-    ui.detail.textContent = alert.type || defaults.detail;
-    refreshMarquee(ui.title, ui.detail);
-  }
-
   const isDayTime = () => {
     const hour = new Date().getHours();
     return hour >= 6 && hour < 18;
@@ -135,9 +83,6 @@
     const feels = document.getElementById('feels-like');
     const temp = document.getElementById('weather-temp');
     const desc = document.getElementById('weather-desc');
-    const alertIcon = document.getElementById('alert-icon');
-    const alertTitle = document.getElementById('alert-title');
-    const alertDetail = document.getElementById('alert-detail');
     if (!icon || !feels || !temp || !desc) return;
 
     let statusMap = new Map();
@@ -148,27 +93,23 @@
     }
 
     try {
-      const res = await fetchWithTimeout(API_URL, 8000, {
+      const weatherRes = await fetchWithTimeout(API_URL, 8000, {
         headers: { 'X-QW-Api-Key': API_KEY },
       });
-      if (!res.ok) throw new Error(`api status ${res.status}`);
-      const data = await res.json();
-      const current = parseCurrent(data);
+      if (!weatherRes.ok) throw new Error(`api status ${weatherRes.status}`);
+
+      const weatherData = await weatherRes.json();
+      const current = parseCurrent(weatherData);
       if (!current) throw new Error('missing current');
       applyWeather({ icon, feels, temp, desc }, statusMap, current);
 
-      const alert = parseAlert(data);
-      applyAlert({ icon: alertIcon, title: alertTitle, detail: alertDetail }, alert);
+      // Alerts removed per request
     } catch (e) {
       console.warn('天气获取失败，保留占位', e);
       if (feels) feels.textContent = '--°C';
       if (temp) temp.textContent = '--°C';
       if (icon) icon.src = `${ICON_BASE}/${FALLBACK_CODE}.svg`;
       if (desc) desc.textContent = '未知';
-      applyAlert(
-        { icon: alertIcon, title: alertTitle, detail: alertDetail },
-        null
-      );
     }
   }
 
