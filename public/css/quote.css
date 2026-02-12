@@ -41,7 +41,7 @@
     font-weight: 700;
     line-height: 1.2;
     color: #111;
-    margin: 64px 0 32px; /* 下移正文 */
+    margin: 36px 0 24px; /* 适度上移正文 */
     text-align: center;
 }
 
