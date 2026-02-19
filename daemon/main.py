@@ -8,9 +8,9 @@ from days_master import DaysMaster
 
 DB_CONFIG = {
     "host": os.getenv("PG_HOST", "localhost"),
-    "user": os.getenv("PG_USER", "screen"),
-    "password": os.getenv("PG_PASSWORD", "JKWLmykskJ6GB6iL"),
-    "dbname": os.getenv("PG_DATABASE", "screen"),
+    "user": os.getenv("PG_USER", "kaguya"),
+    "password": os.getenv("PG_PASSWORD", "Mb7cp5MLTPKNWy4y"),
+    "dbname": os.getenv("PG_DATABASE", "kaguya"),
     "port": int(os.getenv("PG_PORT", "5432")),
 }
 
