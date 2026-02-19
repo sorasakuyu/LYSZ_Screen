@@ -5,6 +5,7 @@ import psycopg2
 from renmin_daily import RenminDaily
 from days_master import DaysMaster
 from config import ConfigService
+from video import VideoService
 
 
 DB_CONFIG = {
@@ -26,15 +27,18 @@ if __name__ == "__main__":
     renmin_db = create_db_connection()
     days_db = create_db_connection()
     config_db = create_db_connection()
+    video_db = create_db_connection()
 
     renmin_daily_api = RenminDaily(db=renmin_db, db_config=DB_CONFIG)
     days_master_api = DaysMaster(db=days_db, db_config=DB_CONFIG)
     config_api = ConfigService(db=config_db, db_config=DB_CONFIG)
+    video_api = VideoService(db=video_db, db_config=DB_CONFIG)
 
     app = FastAPI()
     app.mount("/renmin", renmin_daily_api.app)
     app.mount("/days", days_master_api.app)
     app.mount("/config", config_api.app)
+    app.mount("/video", video_api.app)
 
     import uvicorn
 
@@ -51,5 +55,9 @@ if __name__ == "__main__":
             pass
         try:
             config_db.close()
+        except Exception:
+            pass
+        try:
+            video_db.close()
         except Exception:
             pass
