@@ -16,6 +16,7 @@
 	<script src="js/news.js"></script>
 	<script src="js/weather.js"></script>
 	<script src="js/days.js"></script>
+	<script src="js/weather-alert.js"></script>
 	<style>
 		html, body {
 			height: 100%;
@@ -102,10 +103,10 @@
 			
 			<div class="thumb alert-card" aria-label="天气预警">
 				<div class="alert-main">
-					<img class="alert-icon" id="alert-icon" src="img/weather/alerts/blue.png" alt="天气预警">
+					<img class="alert-icon" id="alert-icon" src="img/weather/qweather.svg" alt="天气预警">
 					<div class="alert-info">
 						<div class="alert-title" id="alert-title">无预警</div>
-						<div class="alert-detail" id="alert-detail">一切安好</div>
+						<!-- <div class="alert-detail" id="alert-detail">一切安好</div> -->
 					</div>
 				</div>
 			</div>
@@ -152,6 +153,7 @@
 		initRenmin();
 		initNews();
 		initWeather();
+		initWeatherAlert();
 		initDays();
 	</script>
 </body>

@@ -105,7 +105,7 @@ async function initWeather() {
       // Alerts removed per request
     } catch (e) {
       console.warn('天气获取失败，保留占位', e);
-      if (temp) temp.textContent = '--°C';
+      if (temp) temp.textContent = '--°';
       if (icon) icon.src = `${ICON_BASE}/${FALLBACK_CODE}.svg`;
       if (desc) desc.textContent = '未知';
     }

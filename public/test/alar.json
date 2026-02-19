@@ -20,12 +20,12 @@
       },
       "eventType": {
         "name": "大风",
-        "code": "1006"
+        "code": "1069"
       },
       "urgency": null,
       "severity": "minor",
       "certainty": null,
-      "icon": "1006",
+      "icon": "1069",
       "color": {
         "code": "blue",
         "red": 30,
