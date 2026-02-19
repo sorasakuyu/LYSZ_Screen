@@ -3,158 +3,42 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="icon" type="image/png" href="img/logo.png">
-	<title>临沂第四中学西校区宣传屏</title>
-	<link rel="stylesheet" href="css/topbar.css">
-	<link rel="stylesheet" href="css/leftdiv.css">
-	<link rel="stylesheet" href="css/quote.css">
-	<link rel="stylesheet" href="css/news.css">
-	<link rel="stylesheet" href="css/weather.css">
-	<link rel="stylesheet" href="css/days.css">
-	<script src="js/time.js"></script>
-	<script src="js/renmin.js"></script>
-	<script src="js/news.js"></script>
-	<script src="js/weather.js"></script>
-	<script src="js/days.js"></script>
-	<script src="js/weather-alert.js"></script>
+	<title>Kaguya-Loading</title>
 	<style>
-		html, body {
-			height: 100%;
-			margin: 0;
-		}
-
-		body {
-			background: url('img/background.jpg') center center / cover no-repeat fixed;
-			display: flex;
-			flex-direction: column;
-				align-items: center;
-				justify-content: flex-start;
-				padding: 148px 0 0 0;
-			font-family: Arial, sans-serif;
-			color: #ffffff;
-			text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-		}
-
-		body::before {
-			content: '';
-			position: fixed;
-			top: 0;
-			right: 0;
-			bottom: 0;
-			left: 0;
-			background: rgba(255, 255, 255, 0.35);
-			pointer-events: none;
-			z-index: 0;
-		}
-
-		.main-wrap {
-			width: min(calc(100vw - 18px), 1916.34px);
-			display: grid;
-			grid-template-columns: 300px 775.17px 775.17px;
-			gap: 18px;
-			padding: 18px 0 18px 0;
-			box-sizing: border-box;
-			z-index: 1;
-		}
-
-		.panel-card {
-			background: rgba(200, 200, 200, 0.5);
-			border-radius: 32px;
-			overflow: hidden;
-			color: #111;
-			text-shadow: none;
-		}
-
-		.content {
-			background: rgba(0, 0, 0, 0.35);
-			padding: 24px 32px;
-			border-radius: 12px;
-			backdrop-filter: blur(6px);
-		}
-
+		body { margin: 0; display: grid; place-items: center; min-height: 100vh; font-family: Arial, sans-serif; color: #333; }
 	</style>
 </head>
 <body>
-	<header class="top-bar">
-		<img class="logo" src="img/logo.png" alt="Logo">
-		<span class="brand-title">临沂第四中学西校区</span>
-		<div class="time-box">
-			<div class="time-date" id="time-date"></div>
-			<div class="time-clock" id="time-clock"></div>
-		</div>
-	</header>
-
-	<main class="main-wrap">
-		<div class="left-stack" aria-label="左侧元素">
-			<div class="thumb weather-card" id="weather-card" aria-label="天气">
-				<div class="weather-main">
-					<img class="weather-icon" id="weather-icon" src="img/weather/qweather.svg" alt="天气图标">
-					<div class="weather-info">
-						<div class="weather-temp" id="weather-temp"></div>
-						<div class="weather-desc" id="weather-desc"></div>
-					</div>
-				</div>
-			</div>
-
-			<!-- <div class="thumb weather-card" aria-label="体感温度">
-				<div class="feels-value" id="feels-like">--°C</div>
-				<div class="feels-label">体感温度</div>
-			</div> -->
-			
-			<div class="thumb alert-card" aria-label="天气预警">
-				<div class="alert-main">
-					<img class="alert-icon" id="alert-icon" src="img/weather/qweather.svg" alt="天气预警">
-					<div class="alert-info">
-						<div class="alert-title" id="alert-title">无预警</div>
-						<!-- <div class="alert-detail" id="alert-detail">一切安好</div> -->
-					</div>
-				</div>
-			</div>
-			
-			<div class="thumb countdown-card" aria-label="倒数日">
-				<div class="countdown-main" id="countdown-card">
-					<div class="countdown-top">
-						<div class="countdown-label" id="countdown-label">……还有</div>
-					</div>
-					<div class="countdown-mid">
-							<span class="countdown-value" id="countdown-value">--</span>
-					</div>
-					<div class="countdown-bottom">
-						<div class="countdown-date" id="countdown-date">目标日：--</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<article class="panel-card quote-card" aria-label="每日金句">
-			<div class="quote-header">
-				<img class="quote-badge" src="img/people.png" alt="人民日报">
-				<div class="quote-daily">每日金句</div>
-			</div>
-			<div class="divider"></div>
-			<div class="quote-text">正在获取</div>
-			<div class="quote-meaning">释义：
-				<br>正在获取
-			</div>
-		</article>
-
-
-		<article class="panel-card news-card" aria-label="今日新闻">
-			<div class="news-header">
-				<div class="news-title">今日新闻</div>
-			</div>
-			<div class="divider"></div>
-			<div class="news-text">正在获取</div>
-		</article>
-	</main>
-
+	<p>Loading…</p>
 	<script>
-		initTime();
-		initRenmin();
-		initNews();
-		initWeather();
-		initWeatherAlert();
-		initDays();
+		(async () => {
+			let redirected = false;
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => {
+				redirected = true;
+				controller.abort();
+				window.location.replace('/error.html');
+			}, 5000);
+
+			try {
+				const res = await fetch('http://0.0.0.0:9000/config/', { mode: 'cors', signal: controller.signal });
+				if (!res.ok) throw new Error('Failed to load config');
+				const data = await res.json();
+				if (redirected) return;
+				clearTimeout(timeoutId);
+				if (data && data.mode === 'default') {
+					window.location.replace('/default.html');
+				}
+                else if (data && data.mode === 'video') {
+					window.location.replace('/video.html');
+				}
+			} catch (err) {
+				if (redirected) return;
+				clearTimeout(timeoutId);
+				console.error('Config fetch error:', err);
+				window.location.replace('/error.html');
+			}
+		})();
 	</script>
 </body>
 </html>
