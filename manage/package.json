@@ -1,0 +1,20 @@
+{
+  "name": "kaguya",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/sorasakuyu/LYSZ_Screen#readme",
+  "bugs": {
+    "url": "https://github.com/sorasakuyu/LYSZ_Screen/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sorasakuyu/LYSZ_Screen.git"
+  },
+  "license": "MIT",
+  "author": "SorasakuYu",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  }
+}
