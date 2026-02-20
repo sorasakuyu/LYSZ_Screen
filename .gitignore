@@ -4,3 +4,5 @@ days_master/
 .venv/
 daemon/__pycache__/
 未标题-1.png
+manage/node_modules/
+manage/package-lock.json

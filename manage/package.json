@@ -1,7 +1,7 @@
 {
   "name": "kaguya",
   "version": "1.0.0",
-  "description": "",
+  "description": "LYSZ_Screen 管理面板",
   "homepage": "https://github.com/sorasakuyu/LYSZ_Screen#readme",
   "bugs": {
     "url": "https://github.com/sorasakuyu/LYSZ_Screen/issues"
@@ -15,6 +15,11 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "test"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.2.1"
   }
 }
