@@ -17,29 +17,26 @@
 			const timeoutId = setTimeout(() => {
 				redirected = true;
 				controller.abort();
-				window.location.replace('/error.html');
+				window.location.replace('http://0.0.0.0/');
 			}, 5000);
 
 			try {
-				const res = await fetch('http://0.0.0.0:9000/config/', { mode: 'cors', signal: controller.signal });
+				const res = await fetch('http://0.0.0.0:9000/config/', { notice_mode: 'cors', signal: controller.signal });
 				if (!res.ok) throw new Error('Failed to load config');
 				const data = await res.json();
 				if (redirected) return;
 				clearTimeout(timeoutId);
-				if (data && data.mode === 'default') {
-					window.location.replace('/default.html');
+				if (data && data.notice_mode === 'text') {
+					window.location.replace('/notice.html');
 				}
-                else if (data && data.mode === 'video') {
-					window.location.replace('/video.html');
-				}
-				else if (data && data.mode === 'notice') {
-					window.location.replace('/notice_check.html');
+                else if (data && data.notice_mode === 'picture') {
+					window.location.replace('/picture.html');
 				}
 			} catch (err) {
 				if (redirected) return;
 				clearTimeout(timeoutId);
 				console.error('Config fetch error:', err);
-				window.location.replace('/error.html');
+				window.location.replace('http://0.0.0.0/');
 			}
 		})();
 	</script>

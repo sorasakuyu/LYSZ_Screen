@@ -1,0 +1,39 @@
+@font-face {
+	font-family: 'HanSerif';
+	src: url('../font/SourceHanSerifCN.otf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+}
+
+
+.notice-card {
+    padding: 0;
+    height: 872.07px;
+    box-sizing: border-box;
+    backdrop-filter: blur(6px);
+    text-align: center;
+    margin: 0;
+}
+
+.notice-text {
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.notice-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    margin: 0;
+}
+
+:root {
+  --notice-height: 720px;  /* 通知列表可视高度 */
+  --notice-speed: 5s;    /* 通知滚动速度，时间越短速度越快 */
+}
