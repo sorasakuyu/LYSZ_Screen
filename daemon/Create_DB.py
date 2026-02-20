@@ -69,6 +69,28 @@ class Create_Config:
             cur.execute(insert_default_sql)
         self.conn.commit()
 
+class Create_Video:
+    def __init__(self, conn: psycopg2.extensions.connection) -> None:
+        self.conn = conn
+
+    def create_table(self) -> None:
+        """创建表"""
+        create_sql = """
+        CREATE TABLE IF NOT EXISTS video (
+            url TEXT PRIMARY KEY
+        );
+        """
+        insert_default_sql = """
+        INSERT INTO video (url)
+        VALUES
+            ('http://0.0.0.0/test/video.mp4')
+        ON CONFLICT (url) DO NOTHING;
+        """
+        with self.conn.cursor() as cur:
+            cur.execute(create_sql)
+            cur.execute(insert_default_sql)
+        self.conn.commit()
+
 class Create_Notice_Text:
     def __init__(self, conn: psycopg2.extensions.connection) -> None:
         self.conn = conn
@@ -118,6 +140,7 @@ if __name__ == "__main__":
     Create_Renmindaily(db).create_table()
     Create_Daysmaster(db).create_table()
     Create_Config(db).create_table()
+    Create_Video(db).create_table()
     Create_Notice_Text(db).create_table()
     Create_Notice_Picture(db).create_table()
     db.close()
