@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Dict, Any, List
 
 import psycopg2
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Body
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg2 import extras
 
@@ -52,7 +52,7 @@ class VideoService:
 			CORSMiddleware,
 			allow_origins=["*"],
 			allow_credentials=False,
-			allow_methods=["GET", "POST", "OPTIONS"],
+			allow_methods=["GET", "POST", "PUT", "OPTIONS"],
 			allow_headers=["*"],
 		)
 
@@ -160,18 +160,18 @@ class VideoService:
 				items.append(filename)
 			return {"items": items}
 
-		@app.post("/upload", summary="上传图片到视频目录", response_description="返回上传后的文件名")
-		async def upload_image(file: UploadFile = File(..., description="上传的图片文件")) -> Dict[str, str]:
+		@app.post("/upload", summary="上传视频到视频目录", response_description="返回上传后的文件名")
+		async def upload_video(file: UploadFile = File(..., description="上传的视频文件")) -> Dict[str, str]:
 			"""
-			上传图片到视频目录
+			上传视频到视频目录
 			返回格式: {"filename": "上传后的文件名"}
 			"""
 			if not file.filename:
 				raise HTTPException(status_code=400, detail="文件名不能为空")
 
 			safe_name = os.path.basename(file.filename)
-			if not _is_image_file(safe_name):
-				raise HTTPException(status_code=400, detail="仅支持图片格式")
+			if not _is_video_file(safe_name):  # ← 改这里：_is_image_file → _is_video_file
+				raise HTTPException(status_code=400, detail="仅支持视频格式")  # ← 改这里：图片 → 视频
 
 			video_dir = _ensure_video_dir(create_if_missing=True)
 			target_path = os.path.join(video_dir, safe_name)
