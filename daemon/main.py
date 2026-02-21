@@ -12,8 +12,8 @@ from picture import NoticePicture
 
 DB_CONFIG = {
     "host": os.getenv("PG_HOST", "localhost"),
-    "user": os.getenv("PG_USER", "kaguya"),
-    "password": os.getenv("PG_PASSWORD", "Mb7cp5MLTPKNWy4y"),
+    "user": os.getenv("PG_USER", "postgres"),
+    "password": os.getenv("PG_PASSWORD", "xx090202"),
     "dbname": os.getenv("PG_DATABASE", "kaguya"),
     "port": int(os.getenv("PG_PORT", "5432")),
 }

@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Path
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -18,6 +18,12 @@ DB_CONFIG = {
 
 class AddRequest(BaseModel):
     content: str
+    defination: Optional[str] = None
+    theme: Optional[str] = None
+
+# 新增编辑请求模型（支持部分字段更新）
+class UpdateRequest(BaseModel):
+    content: Optional[str] = None
     defination: Optional[str] = None
     theme: Optional[str] = None
 
@@ -38,7 +44,7 @@ class RenminDaily:
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=False,
-            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 新增 PUT/DELETE 方法
             allow_headers=["*"],
         )
         self.app.mount("/public", StaticFiles(directory=self.public_dir), name="public")
@@ -142,6 +148,101 @@ class RenminDaily:
                     }
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"新增失败: {str(e)}")
+
+        @app.get("/list")
+        def get_all_renmin():
+            """获取表中所有数据，返回列表形式，每条包含 id、content、defination、theme"""
+            try:
+                db = get_db()
+                with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
+                    sql = """
+                        SELECT id, content, defination, theme
+                        FROM renmindaily
+                        ORDER BY id ASC
+                    """
+                    cur.execute(sql)
+                    rows = cur.fetchall()
+                    # 格式化返回结果
+                    result = [
+                        {
+                            "id": row["id"],
+                            "content": row["content"],
+                            "defination": row["defination"],
+                            "theme": row["theme"]
+                        }
+                        for row in rows
+                    ]
+                    return {
+                        "total": len(result),
+                        "data": result
+                    }
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"查询所有数据失败: {str(e)}")
+
+        @app.put("/update/{item_id}")
+        def update_renmin(
+            item_id: int = Path(..., gt=0, description="要编辑的记录ID"),
+            payload: UpdateRequest = None
+        ):
+            """编辑指定ID的记录，支持部分字段更新（传什么更什么）"""
+            # 校验是否有更新字段
+            update_fields = {k: v for k, v in payload.dict().items() if v is not None}
+            if not update_fields:
+                raise HTTPException(status_code=400, detail="未提供任何需要更新的字段")
+            
+            try:
+                db = get_db()
+                # 先检查记录是否存在
+                with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
+                    cur.execute("SELECT id FROM renmindaily WHERE id = %s", (item_id,))
+                    if not cur.fetchone():
+                        raise HTTPException(status_code=404, detail=f"ID为{item_id}的记录不存在")
+                    
+                    # 构建更新SQL
+                    set_clause = ", ".join([f"{k} = %s" for k in update_fields.keys()])
+                    sql = f"UPDATE renmindaily SET {set_clause} WHERE id = %s RETURNING id, content, defination, theme"
+                    params = list(update_fields.values()) + [item_id]
+                    
+                    cur.execute(sql, params)
+                    updated_row = cur.fetchone()
+                    
+                    return {
+                        "msg": "更新成功",
+                        "data": {
+                            "id": updated_row["id"],
+                            "content": updated_row["content"],
+                            "defination": updated_row["defination"],
+                            "theme": updated_row["theme"]
+                        }
+                    }
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
+
+        @app.delete("/delete/{item_id}")
+        def delete_renmin(
+            item_id: int = Path(..., gt=0, description="要删除的记录ID")
+        ):
+            """删除指定ID的记录"""
+            try:
+                db = get_db()
+                with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
+                    # 先检查记录是否存在
+                    cur.execute("SELECT id FROM renmindaily WHERE id = %s", (item_id,))
+                    if not cur.fetchone():
+                        raise HTTPException(status_code=404, detail=f"ID为{item_id}的记录不存在")
+                    
+                    # 执行删除
+                    cur.execute("DELETE FROM renmindaily WHERE id = %s", (item_id,))
+                    if cur.rowcount == 0:
+                        raise HTTPException(status_code=500, detail="删除操作执行失败")
+                    
+                    return {"msg": f"ID为{item_id}的记录已成功删除"}
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"删除失败: {str(e)}")
 
 
 # 可在其他程序中导入 RenminDaily 并复用 app 实例
