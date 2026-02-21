@@ -1,9 +1,12 @@
+import base64
+import io
 import os
+import shutil
 from contextlib import asynccontextmanager
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 import psycopg2
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException, Body, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg2 import extras
 
@@ -14,6 +17,43 @@ DB_CONFIG = {
     "dbname": os.getenv("PG_DATABASE", "kaguya"),
     "port": int(os.getenv("PG_PORT", "5432")),
 }
+
+PICTURE_ROOT = os.getenv("PICTURE_ROOT", r"E:\Desktop\openlist\Picture")
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
+THUMBNAIL_SIZE = (200, 200)
+
+
+def _ensure_picture_dir(create_if_missing: bool = False) -> str:
+    if os.path.isdir(PICTURE_ROOT):
+        return PICTURE_ROOT
+    if create_if_missing:
+        os.makedirs(PICTURE_ROOT, exist_ok=True)
+        return PICTURE_ROOT
+    raise HTTPException(status_code=500, detail=f"图片目录不存在: {PICTURE_ROOT}")
+
+
+def _is_image_file(filename: str) -> bool:
+    _, ext = os.path.splitext(filename)
+    return ext.lower() in ALLOWED_IMAGE_EXTENSIONS
+
+
+def _build_thumbnail(file_path: str) -> str:
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise HTTPException(status_code=500, detail="Pillow未安装，无法生成缩略图") from exc
+
+    try:
+        with Image.open(file_path) as img:
+            img.thumbnail(THUMBNAIL_SIZE)
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGBA")
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+            return f"data:image/png;base64,{encoded}"
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"生成缩略图失败: {str(exc)}") from exc
 
 
 class NoticePicture:
@@ -29,7 +69,7 @@ class NoticePicture:
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=False,
-            allow_methods=["GET", "PUT", "OPTIONS"],  # 新增PUT方法支持
+            allow_methods=["GET", "PUT", "POST", "OPTIONS"],  # 新增PUT/POST方法支持
             allow_headers=["*"],
         )
 
@@ -138,6 +178,52 @@ class NoticePicture:
                 return {"url": clean_url}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
+
+        @app.get("/files", summary="获取图片文件及缩略图", response_description="返回文件名与缩略图")
+        def list_pictures() -> Dict[str, List[Dict[str, str]]]:
+            """
+            获取图片目录下所有图片的文件名与缩略图
+            返回格式: {"items": [{"filename": "...", "thumbnail": "data:image/png;base64,..."}]}
+            """
+            picture_dir = _ensure_picture_dir()
+            items: List[Dict[str, str]] = []
+            for filename in sorted(os.listdir(picture_dir)):
+                if not _is_image_file(filename):
+                    continue
+                file_path = os.path.join(picture_dir, filename)
+                if not os.path.isfile(file_path):
+                    continue
+                thumbnail = _build_thumbnail(file_path)
+                items.append({"filename": filename, "thumbnail": thumbnail})
+            return {"items": items}
+
+        @app.post("/upload", summary="上传图片", response_description="返回上传后的文件名")
+        async def upload_picture(file: UploadFile = File(..., description="上传的图片文件")) -> Dict[str, str]:
+            """
+            上传图片到指定目录
+            返回格式: {"filename": "上传后的文件名"}
+            """
+            if not file.filename:
+                raise HTTPException(status_code=400, detail="文件名不能为空")
+
+            safe_name = os.path.basename(file.filename)
+            if not _is_image_file(safe_name):
+                raise HTTPException(status_code=400, detail="仅支持图片格式")
+
+            picture_dir = _ensure_picture_dir(create_if_missing=True)
+            target_path = os.path.join(picture_dir, safe_name)
+            if os.path.exists(target_path):
+                raise HTTPException(status_code=409, detail="文件已存在")
+
+            try:
+                with open(target_path, "wb") as target:
+                    shutil.copyfileobj(file.file, target)
+            except Exception as exc:
+                raise HTTPException(status_code=500, detail=f"上传失败: {str(exc)}") from exc
+            finally:
+                await file.close()
+
+            return {"filename": safe_name}
 
 
 api = NoticePicture()
