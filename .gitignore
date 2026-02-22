@@ -5,5 +5,7 @@ days_master/
 daemon/__pycache__/
 未标题-1.png
 .venv_win
-admin-panel/
-manage/
+
+manage/.trae
+manage/client/node_modules/
+manage/node_modules/
