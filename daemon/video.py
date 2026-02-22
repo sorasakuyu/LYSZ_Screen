@@ -17,6 +17,10 @@ DB_CONFIG = {
 }
 
 VIDEO_ROOT = os.getenv("VIDEO_ROOT", r"E:\Desktop\openlist\Video")
+VIDEO_PUBLIC_BASE = os.getenv("VIDEO_PUBLIC_BASE", "http://localhost/video/")
+VIDEO_THUMB_SUBDIR = os.getenv("VIDEO_THUMB_SUBDIR", "thumbs")
+VIDEO_PREVIEW_TIME = float(os.getenv("VIDEO_PREVIEW_TIME", "1"))
+VIDEO_PREVIEW_EXT = os.getenv("VIDEO_PREVIEW_EXT", ".jpg")
 ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".m4v"}
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 
@@ -38,6 +42,50 @@ def _is_video_file(filename: str) -> bool:
 def _is_image_file(filename: str) -> bool:
 	_, ext = os.path.splitext(filename)
 	return ext.lower() in ALLOWED_IMAGE_EXTENSIONS
+
+
+def _build_public_url(filename: str) -> str:
+	base = VIDEO_PUBLIC_BASE
+	if not base.endswith("/"):
+		base += "/"
+	rel_path = str(filename).replace("\\", "/").lstrip("/")
+	return f"{base}{rel_path}"
+
+
+def _thumb_dir() -> str:
+	return os.path.join(VIDEO_ROOT, VIDEO_THUMB_SUBDIR)
+
+
+def _ensure_thumb_dir(create_if_missing: bool = False) -> str:
+	path = _thumb_dir()
+	if os.path.isdir(path):
+		return path
+	if create_if_missing:
+		os.makedirs(path, exist_ok=True)
+		return path
+	raise HTTPException(status_code=500, detail=f"预览图目录不存在: {path}")
+
+
+def _preview_filename(video_filename: str) -> str:
+	stem, _ = os.path.splitext(os.path.basename(video_filename))
+	return f"{stem}{VIDEO_PREVIEW_EXT}"
+
+
+def _generate_preview(video_path: str, preview_path: str) -> None:
+	try:
+		try:
+			from moviepy import VideoFileClip
+		except Exception:
+			from moviepy.editor import VideoFileClip
+	except Exception as exc:
+		raise HTTPException(status_code=500, detail=f"moviepy 导入失败: {exc}") from exc
+
+	with VideoFileClip(video_path) as clip:
+		duration = getattr(clip, "duration", None) or 0
+		frame_time = VIDEO_PREVIEW_TIME
+		if duration > 0:
+			frame_time = min(frame_time, max(0.0, duration - 0.1))
+		clip.save_frame(preview_path, t=frame_time)
 
 class VideoService:
 	def __init__(self, db_config: Dict[str, Any] = None, db=None) -> None:
@@ -124,7 +172,7 @@ class VideoService:
 		def update_video_url(filename: str = Body(..., embed=True, description="视频文件名")) -> Dict[str, str]:
 			"""
 			修改视频URL（只需传入文件名）
-			返回格式: {"url": "http://localhost/video/filename.mp4"}
+			返回格式: {"url": "http://localhost/Video/filename.mp4"}
 			"""
 			if not filename or not filename.strip():
 				raise HTTPException(status_code=400, detail="文件名不能为空")
@@ -133,7 +181,7 @@ class VideoService:
 			if not safe_name:
 				raise HTTPException(status_code=400, detail="文件名不能为空")
 
-			full_url = f"http://localhost/video/{safe_name}"
+			full_url = _build_public_url(safe_name)
 			try:
 				db = get_db()
 				with db.cursor() as cur:
@@ -143,21 +191,32 @@ class VideoService:
 			except Exception as e:
 				raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
 
-		@app.get("/files", summary="获取视频文件名", response_description="返回文件名列表")
-		def list_videos() -> Dict[str, List[str]]:
+		@app.get("/files", summary="获取视频列表", response_description="返回视频列表")
+		def list_videos() -> Dict[str, List[Dict[str, str]]]:
 			"""
-			获取视频目录下所有视频的文件名
-			返回格式: {"items": ["filename1.mp4", "filename2.mkv"]}
+			获取视频目录下所有视频的文件名、预览图和视频链接
+			返回格式: {"items": [{"filename": "a.mp4", "url": "http://localhost/Video/a.mp4", "preview": "http://localhost/Video/a.jpg"}]}
 			"""
 			video_dir = _ensure_video_dir()
-			items: List[str] = []
+			thumb_dir = _ensure_thumb_dir(create_if_missing=True)
+			items: List[Dict[str, str]] = []
 			for filename in sorted(os.listdir(video_dir)):
 				if not _is_video_file(filename):
 					continue
 				file_path = os.path.join(video_dir, filename)
 				if not os.path.isfile(file_path):
 					continue
-				items.append(filename)
+				preview_name = _preview_filename(filename)
+				preview_path = os.path.join(thumb_dir, preview_name)
+				if not os.path.isfile(preview_path):
+					_generate_preview(file_path, preview_path)
+				items.append(
+					{
+						"filename": filename,
+						"url": _build_public_url(filename),
+						"preview": _build_public_url(f"{VIDEO_THUMB_SUBDIR}/{preview_name}") if preview_name else "",
+					}
+				)
 			return {"items": items}
 
 		@app.post("/upload", summary="上传视频到视频目录", response_description="返回上传后的文件名")
