@@ -18,7 +18,7 @@ DB_CONFIG = {
 }
 
 VIDEO_ROOT = os.getenv("VIDEO_ROOT", r"/media/zhngjah/Data/lysz/BigScreen/Data/Video")
-VIDEO_PUBLIC_BASE = os.getenv("VIDEO_PUBLIC_BASE", "http:///kaguya.lysz.sorasaku.vip/Video/")
+VIDEO_PUBLIC_BASE = os.getenv("VIDEO_PUBLIC_BASE", "http:///home.kaguya.lysz.sorasaku.vip/Video/")
 VIDEO_THUMB_SUBDIR = os.getenv("VIDEO_THUMB_SUBDIR", "thumbs")
 VIDEO_PREVIEW_TIME = float(os.getenv("VIDEO_PREVIEW_TIME", "1"))
 VIDEO_PREVIEW_EXT = os.getenv("VIDEO_PREVIEW_EXT", ".jpg")
