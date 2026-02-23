@@ -19,8 +19,8 @@ DB_CONFIG = {
     "port": int(os.getenv("PG_PORT", "5432")),
 }
 
-PICTURE_ROOT = os.getenv("PICTURE_ROOT", r"/media/zhngjah/Data/lysz/BigScreen/Data/Picture")
-PICTURE_PUBLIC_BASE = os.getenv("PICTURE_PUBLIC_BASE", "http://home.kaguya.lysz.sorasaku.vip/Picture/")
+PICTURE_ROOT = os.getenv("PICTURE_ROOT", r"/media/zhngjah/Data/lysz/BigScreen/public/Data/Picture")
+PICTURE_PUBLIC_BASE = os.getenv("PICTURE_PUBLIC_BASE", "http://home.kaguya.lysz.sorasaku.vip/Data/Picture/")
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 THUMBNAIL_SIZE = (200, 200)
 

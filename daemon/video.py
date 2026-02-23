@@ -17,8 +17,8 @@ DB_CONFIG = {
 	"port": int(os.getenv("PG_PORT", "5432")),
 }
 
-VIDEO_ROOT = os.getenv("VIDEO_ROOT", r"/media/zhngjah/Data/lysz/BigScreen/Data/Video")
-VIDEO_PUBLIC_BASE = os.getenv("VIDEO_PUBLIC_BASE", "http:///home.kaguya.lysz.sorasaku.vip/Video/")
+VIDEO_ROOT = os.getenv("VIDEO_ROOT", r"/media/zhngjah/Data/lysz/BigScreen/public/Data/Video")
+VIDEO_PUBLIC_BASE = os.getenv("VIDEO_PUBLIC_BASE", "http:///home.kaguya.lysz.sorasaku.vip/Data/Video/")
 VIDEO_THUMB_SUBDIR = os.getenv("VIDEO_THUMB_SUBDIR", "thumbs")
 VIDEO_PREVIEW_TIME = float(os.getenv("VIDEO_PREVIEW_TIME", "1"))
 VIDEO_PREVIEW_EXT = os.getenv("VIDEO_PREVIEW_EXT", ".jpg")
