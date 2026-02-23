@@ -19,11 +19,13 @@ DB_CONFIG = {
 
 
 class DaysMasterCreate(BaseModel):
+    device: str = "default"
     content: str
     time: date  # 仅日期，如 "2026-02-08"
 
 
 class DaysMasterUpdate(BaseModel):
+    device: Optional[str] = None
     content: Optional[str] = None
     time: Optional[date] = None
 
@@ -52,11 +54,17 @@ class DaysMaster:
         CREATE TABLE IF NOT EXISTS days_master (
             id BIGSERIAL PRIMARY KEY,
             content TEXT NOT NULL,
-            time TIMESTAMPTZ NOT NULL
+            time TIMESTAMPTZ NOT NULL,
+            device TEXT NOT NULL DEFAULT 'default'
         );
+        """
+        alter_device_sql = """
+        ALTER TABLE days_master
+        ADD COLUMN IF NOT EXISTS device TEXT NOT NULL DEFAULT 'default'
         """
         with db.cursor() as cur:
             cur.execute(sql)
+            cur.execute(alter_device_sql)
 
     @asynccontextmanager
     async def _lifespan(self, app: FastAPI):
@@ -84,6 +92,7 @@ class DaysMaster:
             db = psycopg2.connect(**self.db_config)
             db.autocommit = True
             self.app.state.db = db
+            self.ensure_table(db)
         else:
             try:
                 with db.cursor() as cur:
@@ -92,7 +101,28 @@ class DaysMaster:
                 db = psycopg2.connect(**self.db_config)
                 db.autocommit = True
                 self.app.state.db = db
+                self.ensure_table(db)
         return db
+
+    def _ensure_device_placeholder(self, db, device: str) -> None:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT 1
+                FROM days_master
+                WHERE device = %s
+                LIMIT 1
+                """,
+                (device,),
+            )
+            if cur.fetchone() is None:
+                cur.execute(
+                    """
+                    INSERT INTO days_master (content, time, device)
+                    VALUES (%s, %s, %s)
+                    """,
+                    ("", datetime.utcnow(), device),
+                )
 
     @staticmethod
     def serialize_row(row: dict) -> dict:
@@ -109,17 +139,20 @@ class DaysMaster:
         serialize_row = self.serialize_row
 
         @app.get("/")
-        def get_all_daysmaster() -> List[dict]:
+        def get_all_daysmaster(device: str = "default") -> List[dict]:
             """返回所有倒数日，按结束时间升序"""
             try:
                 db = get_db()
+                self._ensure_device_placeholder(db, device)
                 with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
                     cur.execute(
                         """
                         SELECT id, content, time
                         FROM days_master
+                        WHERE device = %s
                         ORDER BY time ASC
-                        """
+                        """,
+                        (device,),
                     )
                     rows = cur.fetchall()
                     return [serialize_row(r) for r in rows]
@@ -127,24 +160,37 @@ class DaysMaster:
                 raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
 
         @app.get("/list")
-        def list_daysmaster() -> List[dict]:
+        def list_daysmaster(device: str = "default") -> List[dict]:
             """列出所有倒数日，按结束日期升序"""
             try:
                 db = get_db()
+                self._ensure_device_placeholder(db, device)
                 with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
-                    cur.execute("SELECT id, content, time FROM days_master ORDER BY time ASC")
+                    cur.execute(
+                        """
+                        SELECT id, content, time
+                        FROM days_master
+                        WHERE device = %s
+                        ORDER BY time ASC
+                        """,
+                        (device,),
+                    )
                     rows = cur.fetchall()
                     return [serialize_row(r) for r in rows]
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
 
         @app.get("/{item_id}")
-        def get_daysmaster(item_id: int):
+        def get_daysmaster(item_id: int, device: str = "default"):
             """获取指定 id 的倒数日"""
             try:
                 db = get_db()
+                self._ensure_device_placeholder(db, device)
                 with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
-                    cur.execute("SELECT id, content, time FROM days_master WHERE id = %s", (item_id,))
+                    cur.execute(
+                        "SELECT id, content, time FROM days_master WHERE id = %s AND device = %s",
+                        (item_id, device),
+                    )
                     row = cur.fetchone()
                     if not row:
                         raise HTTPException(status_code=404, detail="未找到该倒数日")
@@ -157,10 +203,15 @@ class DaysMaster:
             """新增倒数日"""
             try:
                 db = get_db()
+                self._ensure_device_placeholder(db, payload.device)
                 with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
                     cur.execute(
-                        "INSERT INTO days_master(content, time) VALUES (%s, %s) RETURNING id, content, time",
-                        (payload.content, payload.time),
+                        """
+                        INSERT INTO days_master(content, time, device)
+                        VALUES (%s, %s, %s)
+                        RETURNING id, content, time
+                        """,
+                        (payload.content, payload.time, payload.device),
                     )
                     row = cur.fetchone()
                     return serialize_row(row)
@@ -173,6 +224,7 @@ class DaysMaster:
             try:
                 sets = []
                 values = []
+                device = payload.device or "default"
                 if payload.content is not None:
                     sets.append("content = %s")
                     values.append(payload.content)
@@ -182,10 +234,12 @@ class DaysMaster:
                 if not sets:
                     raise HTTPException(status_code=400, detail="未提供需更新的字段")
 
-                sql = f"UPDATE days_master SET {', '.join(sets)} WHERE id = %s RETURNING id, content, time"
+                sql = f"UPDATE days_master SET {', '.join(sets)} WHERE id = %s AND device = %s RETURNING id, content, time"
                 values.append(item_id)
+                values.append(device)
 
                 db = get_db()
+                self._ensure_device_placeholder(db, device)
                 with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
                     cur.execute(sql, tuple(values))
                     row = cur.fetchone()
@@ -198,12 +252,16 @@ class DaysMaster:
                 raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
 
         @app.delete("/{item_id}")
-        def delete_daysmaster(item_id: int):
+        def delete_daysmaster(item_id: int, device: str = "default"):
             """删除倒数日"""
             try:
                 db = get_db()
+                self._ensure_device_placeholder(db, device)
                 with db.cursor() as cur:
-                    cur.execute("DELETE FROM days_master WHERE id = %s", (item_id,))
+                    cur.execute(
+                        "DELETE FROM days_master WHERE id = %s AND device = %s",
+                        (item_id, device),
+                    )
                     if cur.rowcount == 0:
                         raise HTTPException(status_code=404, detail="未找到该倒数日")
                 return {"status": "ok", "deleted_id": item_id}

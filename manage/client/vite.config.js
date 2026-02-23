@@ -41,6 +41,11 @@ export default defineConfig({
         target: 'http://localhost:9000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/video-api/, '/video')
+      },
+      '/device': {
+        target: 'http://localhost:9000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/device/, '/device')
       }
     }
   }

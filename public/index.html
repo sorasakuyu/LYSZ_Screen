@@ -7,6 +7,8 @@
 	<style>
 		body { margin: 0; display: grid; place-items: center; min-height: 100vh; font-family: Arial, sans-serif; color: #333; }
 	</style>
+	<script src="js/device.js"></script>
+	<script src="js/api.js"></script>
 </head>
 <body>
 	<p>Loading…</p>
@@ -21,7 +23,24 @@
 			}, 5000);
 
 			try {
-				const res = await fetch('http://0.0.0.0:9000/config/', { mode: 'cors', signal: controller.signal });
+				const device = window.getDeviceCode();
+				const checkRes = await fetch(`http://localhost:9000/device/check?device=${device}`, {
+					signal: controller.signal,
+					cache: 'no-store'
+				});
+				
+				if (!checkRes.ok) throw new Error('Device check failed');
+				const checkData = await checkRes.json();
+				
+				if (redirected) return;
+				
+				if (!checkData.exists) {
+					clearTimeout(timeoutId);
+					window.location.replace('/unadd.html');
+					return;
+				}
+
+				const res = await apiGet('/config/', 5000);
 				if (!res.ok) throw new Error('Failed to load config');
 				const data = await res.json();
 				if (redirected) return;

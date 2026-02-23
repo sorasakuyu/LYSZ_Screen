@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kaguya-连接失败</title>
+    <title>Kaguya-设备未注册</title>
     <style>
         @font-face {
             font-family: 'Alibaba PuHuiTi';
@@ -28,10 +28,6 @@
             box-sizing: border-box;
             width: 100vw;
         }
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
         .content {
             position: relative;
             z-index: 1;
@@ -54,18 +50,21 @@
             line-height: 1.6;
             margin-bottom: 30px;
         }
-        .btn {
-            background-color: #fff;
-            color: #222;
-            border: none;
-            padding: 10px 30px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
+        .device-code {
+            background-color: #333;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 28px;
+            font-family: monospace;
+            display: inline-block;
+            margin-top: 10px;
+            letter-spacing: 2px;
         }
-        .btn:hover {
-            background-color: #eee;
+        .device-label {
+            color: #aaa;
+            font-size: 18px;
+            margin-bottom: 8px;
         }
         .system-error {
             margin-top: 30px;
@@ -87,17 +86,18 @@
 <body>
     <div class="content">
         <div class="sad-icon">;(</div>
-        <h1>数据获取失败<br>无法与后端服务建立连接</h1>
+        <h1>设备未注册<br>无法使用此大屏系统</h1>
         <div class="desc">
-            后端服务断开连接，请检查后端服务是否正常运行，<br>
-            或与后端服务的网络连接是否正常。
+            未添加此机器，请前往管理端添加此设备。
         </div>
-        <!-- <button class="btn">确认</button> -->
-        <div class="system-error">STOP_CODE_TIME_OUT</div>
+        <div class="device-label">设备码：</div>
+        <div class="device-code" id="device-code">------</div>
+        <div class="system-error">DEVICE_NOT_REGISTERED</div>
         <div class="copyright">Kaguya 由 SorasakuYu 开发<br>Copyright © 2026 <a href="https://www.sorasaku.vip/">SorasakuYu(张家赫)</a>.All rights reserved.</div>
-
     </div>
+    <script src="js/device.js"></script>
     <script>
+        document.getElementById('device-code').textContent = window.getDeviceCode();
         setTimeout(() => {
             window.location.href = 'http://localhost/';
         }, 5000);

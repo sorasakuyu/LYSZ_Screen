@@ -15,10 +15,13 @@ import {
   Info,
   Video,
   FileText,
-  Key
+  Key,
+  Monitor,
+  RefreshCw
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuthStore } from '../stores/authStore'
+import { useDeviceStore } from '../stores/deviceStore'
 import clsx from 'clsx'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -31,7 +34,7 @@ const navItems = [
   { path: '/quotes', icon: Quote, label: '每日金句', adminOnly: true },
   { path: '/notice', icon: Bell, label: '通知设置', adminOnly: true },
   { path: '/video', icon: Video, label: '视频模式', adminOnly: true },
-  // { path: '/password', icon: Key, label: '修改密码', adminOnly: false },
+  { path: '/devices', icon: Monitor, label: '设备管理', adminOnly: true },
   { path: '/about', icon: Info, label: '关于', adminOnly: false },
 ]
 
@@ -42,6 +45,7 @@ export default function AdminLayout() {
   const [announcement, setAnnouncement] = useState('')
   const [announcementLoading, setAnnouncementLoading] = useState(true)
   const { user, logout } = useAuthStore()
+  const { currentDevice, clearDevice } = useDeviceStore()
   const navigate = useNavigate()
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
 
@@ -65,7 +69,13 @@ export default function AdminLayout() {
 
   const handleLogout = () => {
     logout()
+    clearDevice()
     navigate('/login')
+  }
+
+  const handleChangeDevice = () => {
+    clearDevice()
+    navigate('/select-device')
   }
 
   return (
@@ -96,6 +106,26 @@ export default function AdminLayout() {
           </button>
         </div>
 
+        {currentDevice && (
+          <div className={clsx(
+            "px-3 py-3 border-b border-gray-200",
+            !sidebarOpen && "lg:px-2"
+          )}>
+            <div className={clsx(
+              "flex items-center gap-2 p-2 bg-purple-50 rounded-lg",
+              !sidebarOpen && "lg:justify-center"
+            )}>
+              <Monitor className="w-4 h-4 text-purple-600 flex-shrink-0" />
+              {sidebarOpen && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-purple-600 font-medium truncate">{currentDevice.device_id}</p>
+                  <p className="text-xs text-gray-400 truncate">{currentDevice.remark || '未设置备注'}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <nav className="flex-1 py-4 px-3 space-y-2 overflow-y-auto">
           {filteredNavItems.map((item) => (
             <NavLink
@@ -117,7 +147,16 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-gray-200 flex-shrink-0">
+        <div className="p-3 border-t border-gray-200 flex-shrink-0 space-y-2">
+          <button
+            onClick={handleChangeDevice}
+            className={clsx(
+              "flex items-center gap-3 w-full px-3 py-3 rounded-xl text-gray-500 hover:text-cyan-500 hover:bg-cyan-50 transition-all duration-300"
+            )}
+          >
+            <RefreshCw className="w-5 h-5 flex-shrink-0" />
+            <span className={clsx("font-medium", !sidebarOpen && "lg:hidden")}>切换设备</span>
+          </button>
           <button
             onClick={handleLogout}
             className={clsx(

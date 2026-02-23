@@ -13,6 +13,7 @@ import {
 import axios from 'axios'
 import clsx from 'clsx'
 import { useAuthStore } from '../stores/authStore'
+import { useDeviceStore } from '../stores/deviceStore'
 
 const configApi = axios.create({
   baseURL: '/config-api'
@@ -38,15 +39,17 @@ export default function NoticeSettings() {
   const [currentPicture, setCurrentPicture] = useState('')
   const [imagesLoading, setImagesLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [previewImage, setPreviewImage] = useState(null)
   const fileInputRef = useRef(null)
   const user = useAuthStore((state) => state.user)
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
+  const { currentDevice } = useDeviceStore()
 
   const fetchConfig = async () => {
     try {
-      const res = await configApi.get('/')
+      const res = await configApi.get(`/?device=${currentDevice?.device_id}`)
       setConfig(res.data)
     } catch (err) {
       console.error('获取配置失败:', err)
@@ -55,7 +58,7 @@ export default function NoticeSettings() {
 
   const fetchNotice = async () => {
     try {
-      const res = await noticeApi.get('/')
+      const res = await noticeApi.get(`/?device=${currentDevice?.device_id}`)
       setNotice(res.data)
     } catch (err) {
       console.error('获取通知失败:', err)
@@ -65,7 +68,7 @@ export default function NoticeSettings() {
   const fetchImages = async () => {
     setImagesLoading(true)
     try {
-      const res = await pictureApi.get('/files')
+      const res = await pictureApi.get(`/files`)
       setImages(res.data.items || [])
     } catch (err) {
       console.error('获取图片列表失败:', err)
@@ -76,8 +79,10 @@ export default function NoticeSettings() {
 
   const fetchCurrentPicture = async () => {
     try {
-      const res = await pictureApi.get('/')
-      setCurrentPicture(res.data.url || '')
+      const res = await pictureApi.get(`/?device=${currentDevice?.device_id}`)
+      const url = res.data.url || ''
+      const filename = url.split('/').pop() || ''
+      setCurrentPicture(filename)
     } catch (err) {
       console.error('获取当前图片失败:', err)
     }
@@ -90,12 +95,18 @@ export default function NoticeSettings() {
     }
 
     setUploading(true)
+    setUploadProgress(0)
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('device', currentDevice?.device_id)
 
     try {
       await pictureApi.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          setUploadProgress(percentCompleted)
+        }
       })
       fetchImages()
       alert('上传成功！')
@@ -104,6 +115,7 @@ export default function NoticeSettings() {
       alert('上传失败，请重试')
     } finally {
       setUploading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -137,7 +149,7 @@ export default function NoticeSettings() {
 
     setSaving(true)
     try {
-      await pictureApi.put('/', { new_url: selectedImage })
+      await pictureApi.put('/', { device: currentDevice?.device_id, filename: selectedImage })
       setCurrentPicture(selectedImage)
       setSelectedImage(null)
       alert('设置成功！')
@@ -150,22 +162,24 @@ export default function NoticeSettings() {
   }
 
   useEffect(() => {
-    const init = async () => {
-      await fetchConfig()
-      setLoading(false)
+    if (currentDevice) {
+      const init = async () => {
+        await fetchConfig()
+        setLoading(false)
+      }
+      init()
     }
-    init()
-  }, [])
+  }, [currentDevice])
 
   useEffect(() => {
-    if (config.mode === 'notice' && config.notice_mode === 'text') {
+    if (currentDevice && config.mode === 'notice' && config.notice_mode === 'text') {
       fetchNotice()
     }
-    if (config.mode === 'notice' && config.notice_mode === 'picture') {
+    if (currentDevice && config.mode === 'notice' && config.notice_mode === 'picture') {
       fetchImages()
       fetchCurrentPicture()
     }
-  }, [config.mode, config.notice_mode])
+  }, [config.mode, config.notice_mode, currentDevice])
 
   const isNoticeEnabled = config.mode === 'notice'
 
@@ -174,7 +188,7 @@ export default function NoticeSettings() {
     setModeChanging(true)
     try {
       const newMode = enabled ? 'notice' : 'default'
-      await configApi.put('/config/mode', { value: newMode })
+      await configApi.put('/config/mode', { value: newMode, device: currentDevice?.device_id })
       setConfig(prev => ({ ...prev, mode: newMode }))
     } catch (err) {
       console.error('更改模式失败:', err)
@@ -186,7 +200,7 @@ export default function NoticeSettings() {
   const handleNoticeModeChange = async (mode) => {
     if (!isAdmin) return
     try {
-      await configApi.put('/config/notice_mode', { value: mode })
+      await configApi.put('/config/notice_mode', { value: mode, device: currentDevice?.device_id })
       setConfig(prev => ({ ...prev, notice_mode: mode }))
     } catch (err) {
       console.error('更改通知方式失败:', err)
@@ -197,7 +211,7 @@ export default function NoticeSettings() {
     if (!isAdmin) return
     setSaving(true)
     try {
-      await noticeApi.put('/update-notice', notice)
+      await noticeApi.put('/update-notice', { ...notice, device: currentDevice?.device_id })
       alert('保存成功！')
     } catch (err) {
       console.error('保存通知失败:', err)
@@ -392,9 +406,16 @@ export default function NoticeSettings() {
                       className="hidden"
                     />
                     {uploading ? (
-                      <div className="flex flex-col items-center gap-2">
+                      <div className="flex flex-col items-center gap-3 w-full max-w-xs">
                         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
                         <span className="text-gray-500">上传中...</span>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-gradient-to-r from-cyan-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                        <span className="text-sm text-gray-400">{uploadProgress}%</span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-2">

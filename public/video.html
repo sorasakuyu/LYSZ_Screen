@@ -11,6 +11,8 @@
 	<link rel="stylesheet" href="css/news.css">
 	<link rel="stylesheet" href="css/weather.css">
 	<link rel="stylesheet" href="css/days.css">
+	<script src="js/device.js"></script>
+	<script src="js/api.js"></script>
 	<script src="js/time.js"></script>
 	<script src="js/renmin.js"></script>
 	<script src="js/news.js"></script>
@@ -184,14 +186,14 @@
 		initWeatherAlert();
 		initDays();
 		setInterval(() => {
-			window.location.href = 'http://0.0.0.0';
+			window.location.href = 'http://localhost';
 		}, 60000);
 
 		async function initVideoArea() {
 			const player = document.getElementById('video-player');
 			const empty = document.getElementById('video-empty');
 			try {
-				const res = await fetch('http://0.0.0.0:9000/video/');
+				const res = await apiGet('/video/', 8000);
 				if (!res.ok) throw new Error('fetch failed');
 				const data = await res.json();
 				const url = data && data.url;
@@ -199,7 +201,7 @@
 				player.src = url;
 				empty.style.display = 'none';
 				player.addEventListener('ended', () => {
-					window.location.href = 'http://0.0.0.0';
+					window.location.href = 'http://localhost';
 				});
 				player.play().catch(() => {});
 			} catch (err) {

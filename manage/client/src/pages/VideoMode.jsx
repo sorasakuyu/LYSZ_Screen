@@ -12,6 +12,7 @@ import {
 import axios from 'axios'
 import clsx from 'clsx'
 import { useAuthStore } from '../stores/authStore'
+import { useDeviceStore } from '../stores/deviceStore'
 
 const configApi = axios.create({
   baseURL: '/config-api'
@@ -31,15 +32,17 @@ export default function VideoMode() {
   const [currentVideo, setCurrentVideo] = useState('')
   const [videosLoading, setVideosLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [hoveredVideo, setHoveredVideo] = useState(null)
   const fileInputRef = useRef(null)
   const user = useAuthStore((state) => state.user)
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
+  const { currentDevice } = useDeviceStore()
 
   const fetchConfig = async () => {
     try {
-      const res = await configApi.get('/')
+      const res = await configApi.get(`/?device=${currentDevice?.device_id}`)
       setConfig(res.data)
     } catch (err) {
       console.error('获取配置失败:', err)
@@ -49,7 +52,7 @@ export default function VideoMode() {
   const fetchVideos = async () => {
     setVideosLoading(true)
     try {
-      const res = await videoApi.get('/files')
+      const res = await videoApi.get(`/files?device=${currentDevice?.device_id}`)
       setVideos(res.data.items || [])
     } catch (err) {
       console.error('获取视频列表失败:', err)
@@ -60,7 +63,7 @@ export default function VideoMode() {
 
   const fetchCurrentVideo = async () => {
     try {
-      const res = await videoApi.get('')
+      const res = await videoApi.get(`?device=${currentDevice?.device_id}`)
       const url = res.data.url || ''
       const filename = url.split('/').pop() || ''
       setCurrentVideo(filename)
@@ -76,12 +79,18 @@ export default function VideoMode() {
     }
 
     setUploading(true)
+    setUploadProgress(0)
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('device', currentDevice?.device_id)
 
     try {
       await videoApi.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          setUploadProgress(percentCompleted)
+        }
       })
       fetchVideos()
       alert('上传成功！')
@@ -90,6 +99,7 @@ export default function VideoMode() {
       alert('上传失败，请重试')
     } finally {
       setUploading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -122,9 +132,7 @@ export default function VideoMode() {
     }
 
     try {
-      await videoApi.put('', { filename: selectedVideo }, {
-        headers: { 'Content-Type': 'application/json' }
-      })
+      await videoApi.put('/', { device: currentDevice?.device_id, filename: selectedVideo })
       setCurrentVideo(selectedVideo)
       setSelectedVideo(null)
       alert('设置成功！')
@@ -135,19 +143,21 @@ export default function VideoMode() {
   }
 
   useEffect(() => {
-    const init = async () => {
-      await fetchConfig()
-      setLoading(false)
+    if (currentDevice) {
+      const init = async () => {
+        await fetchConfig()
+        setLoading(false)
+      }
+      init()
     }
-    init()
-  }, [])
+  }, [currentDevice])
 
   useEffect(() => {
-    if (config.mode === 'video') {
+    if (currentDevice && config.mode === 'video') {
       fetchVideos()
       fetchCurrentVideo()
     }
-  }, [config.mode])
+  }, [config.mode, currentDevice])
 
   const isVideoEnabled = config.mode === 'video'
 
@@ -156,7 +166,7 @@ export default function VideoMode() {
     setModeChanging(true)
     try {
       const newMode = enabled ? 'video' : 'default'
-      await configApi.put('/config/mode', { value: newMode })
+      await configApi.put('/config/mode', { value: newMode, device: currentDevice?.device_id })
       setConfig(prev => ({ ...prev, mode: newMode }))
     } catch (err) {
       console.error('更改模式失败:', err)
@@ -258,9 +268,16 @@ export default function VideoMode() {
                   className="hidden"
                 />
                 {uploading ? (
-                  <div className="flex flex-col items-center gap-2">
+                  <div className="flex flex-col items-center gap-3 w-full max-w-xs">
                     <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
                     <span className="text-gray-500">上传中...</span>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-cyan-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <span className="text-sm text-gray-400">{uploadProgress}%</span>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2">

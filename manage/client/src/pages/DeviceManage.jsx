@@ -1,131 +1,105 @@
 import { useEffect, useState } from 'react'
 import { 
-  Quote, 
+  Monitor, 
   Plus, 
   Edit2, 
   Trash2,
   X,
-  Loader2,
-  Tag
+  Loader2
 } from 'lucide-react'
 import axios from 'axios'
 import clsx from 'clsx'
 import { useAuthStore } from '../stores/authStore'
-import { useDeviceStore } from '../stores/deviceStore'
 
-const api = axios.create({
-  baseURL: '/quotes-api'
+const deviceApi = axios.create({
+  baseURL: '/device'
 })
 
-export default function QuotesManage() {
-  const [quotes, setQuotes] = useState([])
-  const [total, setTotal] = useState(0)
+export default function DeviceManage() {
+  const [devices, setDevices] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState('add')
-  const [formData, setFormData] = useState({ content: '', defination: '', theme: '' })
-  const [editId, setEditId] = useState(null)
+  const [formData, setFormData] = useState({ device_id: '', remark: '' })
+  const [editDeviceId, setEditDeviceId] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const user = useAuthStore((state) => state.user)
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
-  const { currentDevice } = useDeviceStore()
 
-  const fetchQuotes = async () => {
+  const fetchDevices = async () => {
     try {
-      const res = await api.get(`/list`)
-      setQuotes(res.data.data || [])
-      setTotal(res.data.total || 0)
+      const res = await deviceApi.get('/')
+      setDevices(res.data)
     } catch (err) {
-      console.error('获取金句失败:', err)
+      console.error('获取设备列表失败:', err)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (currentDevice) {
-      fetchQuotes()
-    }
-  }, [currentDevice])
+    fetchDevices()
+  }, [])
 
   const openAddModal = () => {
     if (!isAdmin) return
     setModalMode('add')
-    setFormData({ content: '', defination: '', theme: '' })
+    setFormData({ device_id: '', remark: '' })
     setModalOpen(true)
   }
 
-  const openEditModal = (item) => {
+  const openEditModal = (device) => {
     if (!isAdmin) return
     setModalMode('edit')
-    setEditId(item.id)
-    setFormData({ 
-      content: item.content, 
-      defination: item.defination || '', 
-      theme: item.theme || '' 
-    })
+    setEditDeviceId(device.device_id)
+    setFormData({ device_id: device.device_id, remark: device.remark || '' })
     setModalOpen(true)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.content.trim()) return
+    if (!formData.device_id) return
     
     setSubmitting(true)
     try {
-      const payload = { content: formData.content, device: currentDevice?.device_id }
-      if (formData.defination) payload.defination = formData.defination
-      if (formData.theme) payload.theme = formData.theme
-
       if (modalMode === 'add') {
-        await api.post(`/add`, payload)
+        await deviceApi.post('/update', formData)
       } else {
-        await api.put(`/update/${editId}`, payload)
+        await deviceApi.put(`/remark/${editDeviceId}`, { remark: formData.remark })
       }
       setModalOpen(false)
-      fetchQuotes()
+      fetchDevices()
     } catch (err) {
       console.error('操作失败:', err)
+      alert(err.response?.data?.message || '操作失败，请重试')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (deviceId) => {
     try {
-      await api.delete(`/delete/${id}`)
+      await deviceApi.delete(`/delete/${deviceId}`)
       setDeleteConfirm(null)
-      fetchQuotes()
+      fetchDevices()
     } catch (err) {
       console.error('删除失败:', err)
+      alert('删除失败，请重试')
     }
-  }
-
-  const themeColors = {
-    '励志': 'bg-orange-100 text-orange-600',
-    '人生': 'bg-purple-100 text-purple-600',
-    '学习': 'bg-cyan-100 text-cyan-600',
-    '爱情': 'bg-red-100 text-red-600',
-    '友情': 'bg-green-100 text-green-600',
-  }
-
-  const getThemeStyle = (theme) => {
-    if (!theme) return 'bg-gray-100 text-gray-500'
-    return themeColors[theme] || 'bg-indigo-100 text-indigo-600'
   }
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">每日金句管理</h1>
-          <p className="text-gray-500 mt-1">共 {total} 条金句</p>
+          <h1 className="text-2xl font-bold text-gray-800">设备管理</h1>
+          <p className="text-gray-500 mt-1">管理所有设备</p>
         </div>
         {isAdmin && (
           <button onClick={openAddModal} className="btn-primary flex items-center gap-2 self-start">
             <Plus className="w-4 h-4" />
-            <span>添加金句</span>
+            <span>添加设备</span>
           </button>
         )}
       </div>
@@ -134,33 +108,33 @@ export default function QuotesManage() {
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
         </div>
-      ) : quotes.length === 0 ? (
+      ) : devices.length === 0 ? (
         <div className="glass rounded-2xl p-12 text-center">
-          <Quote className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-400">暂无金句</p>
+          <Monitor className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+          <p className="text-gray-400">暂无设备，点击上方按钮添加</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {quotes.map((item, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {devices.map((device, index) => (
             <div
-              key={item.id}
-              className="glass rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 animate-slide-up group"
+              key={device.device_id}
+              className="glass rounded-2xl p-5 hover:scale-[1.02] transition-all duration-300 animate-slide-up group"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div className="flex items-start justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-100 to-purple-100 flex items-center justify-center">
-                  <Quote className="w-5 h-5 text-purple-600" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-100 to-purple-100 flex items-center justify-center">
+                  <Monitor className="w-6 h-6 text-purple-600" />
                 </div>
                 {isAdmin && (
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
-                      onClick={() => openEditModal(item)}
+                      onClick={() => openEditModal(device)}
                       className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button 
-                      onClick={() => setDeleteConfirm(item.id)}
+                      onClick={() => setDeleteConfirm(device.device_id)}
                       className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -169,18 +143,8 @@ export default function QuotesManage() {
                 )}
               </div>
 
-              <p className="text-lg text-gray-800 leading-relaxed mb-4 line-clamp-3">
-                "{item.content}"
-              </p>
-
-              {item.theme && (
-                <div className="flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-gray-400" />
-                  <span className={clsx("px-3 py-1 rounded-full text-xs font-medium", getThemeStyle(item.theme))}>
-                    {item.theme}
-                  </span>
-                </div>
-              )}
+              <h3 className="text-lg font-semibold text-gray-800 mb-2 truncate">{device.device_id}</h3>
+              <p className="text-sm text-gray-500">{device.remark || '未设置备注'}</p>
             </div>
           ))}
         </div>
@@ -192,7 +156,7 @@ export default function QuotesManage() {
           <div className="relative glass rounded-2xl p-6 w-full max-w-md animate-slide-up shadow-xl">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">
-                {modalMode === 'add' ? '添加金句' : '编辑金句'}
+                {modalMode === 'add' ? '添加设备' : '编辑设备'}
               </h2>
               <button 
                 onClick={() => setModalOpen(false)}
@@ -204,41 +168,26 @@ export default function QuotesManage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  金句内容 <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="input-field min-h-[100px] resize-none"
-                  placeholder="请输入金句内容"
+                <label className="block text-sm font-medium text-gray-700 mb-2">设备ID</label>
+                <input
+                  type="text"
+                  value={formData.device_id}
+                  onChange={(e) => modalMode === 'add' && setFormData({ ...formData, device_id: e.target.value })}
+                  className="input-field"
+                  placeholder="请输入设备ID"
+                  disabled={modalMode === 'edit'}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  释义 <span className="text-gray-400 text-xs">(选填)</span>
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">备注</label>
                 <input
                   type="text"
-                  value={formData.defination}
-                  onChange={(e) => setFormData({ ...formData, defination: e.target.value })}
+                  value={formData.remark}
+                  onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
                   className="input-field"
-                  placeholder="金句的释义"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  主题 <span className="text-gray-400 text-xs">(选填)</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.theme}
-                  onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
-                  className="input-field"
-                  placeholder="如：励志、人生、学习"
+                  placeholder="请输入备注"
                 />
               </div>
 
@@ -278,7 +227,7 @@ export default function QuotesManage() {
               <Trash2 className="w-8 h-8 text-red-500" />
             </div>
             <h3 className="text-lg font-bold text-gray-800 mb-2">确认删除</h3>
-            <p className="text-gray-500 mb-6">删除后无法恢复，确定要删除这条金句吗？</p>
+            <p className="text-gray-500 mb-6">删除后无法恢复，确定要删除这个设备吗？</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(null)}

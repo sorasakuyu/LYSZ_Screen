@@ -1,6 +1,4 @@
 function initPicture(){
-	const endpoints = ['http://localhost:9000/picture/'];
-
 	async function loadPicture(){
 		const box = document.querySelector('.notice-text');
 		if (!box){
@@ -9,30 +7,25 @@ function initPicture(){
 		}
 
 		const fallback = box.innerHTML;
-		for (const url of endpoints){
-			try {
-				const res = await fetch(url, { cache: 'no-store' });
-				if (!res.ok) continue;
-				const data = await res.json();
-				const picUrl = typeof data.url === 'string' ? data.url : '';
-				if (!picUrl) continue;
+		try {
+			const res = await apiGet('/picture/', 8000);
+			if (!res.ok) throw new Error('fetch failed');
+			const data = await res.json();
+			const picUrl = typeof data.url === 'string' ? data.url : '';
+			if (!picUrl) throw new Error('no url');
 
-				// 清空并插入图片
-				box.innerHTML = '';
-				const img = document.createElement('img');
-				img.src = picUrl;
-				img.alt = '通知图片';
-				img.className = 'notice-img';
-				box.appendChild(img);
+			box.innerHTML = '';
+			const img = document.createElement('img');
+			img.src = picUrl;
+			img.alt = '通知图片';
+			img.className = 'notice-img';
+			box.appendChild(img);
 
-				return; // 成功后结束
-			} catch (e) {
-				// 尝试下一个端点
-			}
+			return;
+		} catch (e) {
+			console.warn('图片通知接口不可用或缺少url，保留占位内容');
+			box.innerHTML = fallback;
 		}
-
-		console.warn('图片通知接口不可用或缺少url，保留占位内容');
-		box.innerHTML = fallback;
 	}
 
 	if (document.readyState === 'loading') {

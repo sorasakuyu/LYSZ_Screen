@@ -18,12 +18,14 @@ DB_CONFIG = {
 
 # 修复 Pydantic V2 警告：schema_extra → json_schema_extra
 class NoticeUpdateRequest(BaseModel):
+    device: str = "default"
     title: str = "通知"  # 默认修改标题为"通知"的记录
     context: str  # 通知内容（必填）
 
     class Config:
         json_schema_extra = {  # 替换原 schema_extra
             "example": {
+                "device": "default",
                 "title": "通知",
                 "context": "这是更新后的测试通知内容"
             }
@@ -51,17 +53,52 @@ class NoticeText:
     def ensure_table(self, db) -> None:
         create_sql = """
         CREATE TABLE IF NOT EXISTS notice_text (
-            title TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL,
+            device TEXT NOT NULL DEFAULT 'default',
             context TEXT NOT NULL
         );
         """
+        alter_device_sql = """
+        ALTER TABLE notice_text
+        ADD COLUMN IF NOT EXISTS device TEXT NOT NULL DEFAULT 'default'
+        """
+        drop_title_unique_sql = """
+        ALTER TABLE notice_text
+        DROP CONSTRAINT IF EXISTS notice_text_title_key
+        """
+        drop_title_pk_sql = """
+        ALTER TABLE notice_text
+        DROP CONSTRAINT IF EXISTS notice_text_pkey
+        """
+        drop_device_title_unique_sql = """
+        ALTER TABLE notice_text
+        DROP CONSTRAINT IF EXISTS notice_text_device_title_key
+        """
+        add_device_unique_sql = """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'notice_text_device_key'
+            ) THEN
+                ALTER TABLE notice_text
+                ADD CONSTRAINT notice_text_device_key UNIQUE (device);
+            END IF;
+        END $$;
+        """
         insert_default_sql = """
-        INSERT INTO notice_text (title, context)
-        VALUES ('通知', '这是一条测试通知')
-        ON CONFLICT (title) DO NOTHING;
+        INSERT INTO notice_text (device, title, context)
+        VALUES ('default', '通知', '这是一条测试通知')
+        ON CONFLICT (device) DO NOTHING;
         """
         with db.cursor() as cur:
             cur.execute(create_sql)
+            cur.execute(alter_device_sql)
+            cur.execute(drop_title_unique_sql)
+            cur.execute(drop_title_pk_sql)
+            cur.execute(drop_device_title_unique_sql)
+            cur.execute(add_device_unique_sql)
             cur.execute(insert_default_sql)
 
     @asynccontextmanager
@@ -89,6 +126,7 @@ class NoticeText:
             db = psycopg2.connect(**self.db_config)
             db.autocommit = True
             self.app.state.db = db
+            self.ensure_table(db)
         else:
             try:
                 with db.cursor() as cur:
@@ -97,6 +135,7 @@ class NoticeText:
                 db = psycopg2.connect(**self.db_config)
                 db.autocommit = True
                 self.app.state.db = db
+                self.ensure_table(db)
         return db
 
     def _register_routes(self) -> None:
@@ -105,13 +144,31 @@ class NoticeText:
 
         # 原有：获取通知内容接口
         @app.get("/", summary="获取通知内容")
-        def get_config() -> Dict[str, str]:
+        def get_config(device: str = "default") -> Dict[str, str]:
             try:
                 db = get_db()
                 with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
-                    cur.execute("SELECT title, context FROM notice_text ORDER BY title ASC LIMIT 1")
+                    cur.execute(
+                        """
+                        SELECT title, context
+                        FROM notice_text
+                        WHERE device = %s
+                        LIMIT 1
+                        """,
+                        (device,),
+                    )
                     row = cur.fetchone()
-                    return {"title": row["title"], "context": row["context"]} if row else {}
+                    if row:
+                        return {"title": row["title"], "context": row["context"]}
+                    cur.execute(
+                        """
+                        INSERT INTO notice_text (device, title, context)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (device) DO NOTHING
+                        """,
+                        (device, "通知", ""),
+                    )
+                    return {"title": "通知", "context": ""}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
 
@@ -127,11 +184,18 @@ class NoticeText:
                 with db.cursor() as cur:
                     # UPSERT：存在则更新，不存在则插入
                     update_sql = """
-                    INSERT INTO notice_text (title, context)
-                    VALUES (%s, %s)
-                    ON CONFLICT (title) DO UPDATE SET context = EXCLUDED.context;
+                    INSERT INTO notice_text (device, title, context)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (device) DO UPDATE SET title = EXCLUDED.title, context = EXCLUDED.context;
                     """
-                    cur.execute(update_sql, (notice_data.title.strip(), notice_data.context.strip()))
+                    cur.execute(
+                        update_sql,
+                        (
+                            notice_data.device.strip(),
+                            notice_data.title.strip(),
+                            notice_data.context.strip(),
+                        ),
+                    )
                 return {"code": 200, "message": "通知内容修改成功", "data": notice_data.dict()}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"修改失败: {str(e)}")

@@ -11,6 +11,7 @@ import clsx from 'clsx'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useAuthStore } from '../stores/authStore'
+import { useDeviceStore } from '../stores/deviceStore'
 
 const configApi = axios.create({
   baseURL: '/config-api'
@@ -22,10 +23,11 @@ export default function Dashboard() {
   const [announcement, setAnnouncement] = useState('')
   const [announcementLoading, setAnnouncementLoading] = useState(true)
   const user = useAuthStore((state) => state.user)
+  const { currentDevice } = useDeviceStore()
 
   const fetchConfig = async () => {
     try {
-      const res = await configApi.get('/')
+      const res = await configApi.get(`/?device=${currentDevice?.device_id}`)
       setConfig(res.data)
     } catch (err) {
       console.error('获取配置失败:', err)
@@ -47,9 +49,11 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    fetchConfig()
-    fetchAnnouncement()
-  }, [])
+    if (currentDevice) {
+      fetchConfig()
+      fetchAnnouncement()
+    }
+  }, [currentDevice])
 
   const getModeLabel = (mode) => {
     switch (mode) {

@@ -6,9 +6,10 @@ from contextlib import asynccontextmanager
 from typing import Dict, Any, Optional, List
 
 import psycopg2
-from fastapi import FastAPI, HTTPException, Body, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg2 import extras
+from pydantic import BaseModel
 
 DB_CONFIG = {
     "host": os.getenv("PG_HOST", "localhost"),
@@ -18,7 +19,8 @@ DB_CONFIG = {
     "port": int(os.getenv("PG_PORT", "5432")),
 }
 
-PICTURE_ROOT = os.getenv("PICTURE_ROOT", r"E:\Desktop\openlist\Picture")
+PICTURE_ROOT = os.getenv("PICTURE_ROOT", r"/media/zhngjah/Data/lysz/BigScreen/Data/Picture")
+PICTURE_PUBLIC_BASE = os.getenv("PICTURE_PUBLIC_BASE", "http://localhost/picture/")
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 THUMBNAIL_SIZE = (200, 200)
 
@@ -56,6 +58,14 @@ def _build_thumbnail(file_path: str) -> str:
         raise HTTPException(status_code=500, detail=f"生成缩略图失败: {str(exc)}") from exc
 
 
+def _build_public_url(filename: str) -> str:
+    base = PICTURE_PUBLIC_BASE
+    if not base.endswith("/"):
+        base += "/"
+    rel_path = str(filename).replace("\\", "/").lstrip("/")
+    return f"{base}{rel_path}"
+
+
 class NoticePicture:
     def __init__(self, db_config: Dict[str, Any] = None, db=None) -> None:
         self.db_config = db_config or DB_CONFIG
@@ -76,21 +86,41 @@ class NoticePicture:
     def ensure_table(self, db) -> None:
         create_sql = """
         CREATE TABLE IF NOT EXISTS notice_picture (
-            url TEXT NOT NULL
+            url TEXT NOT NULL,
+            device TEXT NOT NULL DEFAULT 'default'
         );
         """
-        # 修复：避免重复插入默认数据（原逻辑每次启动都会插入，导致多条重复）
-        check_default_sql = "SELECT COUNT(*) FROM notice_picture;"
-        insert_default_sql = """
-        INSERT INTO notice_picture (url)
-        VALUES ('url')
+        alter_device_sql = """
+        ALTER TABLE notice_picture
+        ADD COLUMN IF NOT EXISTS device TEXT NOT NULL DEFAULT 'default'
+        """
+        drop_pk_sql = """
+        ALTER TABLE notice_picture
+        DROP CONSTRAINT IF EXISTS notice_picture_pkey
+        """
+        add_unique_sql = """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_constraint
+                WHERE conname = 'notice_picture_device_key'
+            ) THEN
+                ALTER TABLE notice_picture
+                ADD CONSTRAINT notice_picture_device_key UNIQUE (device);
+            END IF;
+        END $$;
+        """
+        drop_is_file_sql = """
+        ALTER TABLE notice_picture
+        DROP COLUMN IF EXISTS is_file
         """
         with db.cursor() as cur:
             cur.execute(create_sql)
-            cur.execute(check_default_sql)
-            count = cur.fetchone()[0]
-            if count == 0:  # 仅表为空时插入默认数据
-                cur.execute(insert_default_sql)
+            cur.execute(alter_device_sql)
+            cur.execute(drop_pk_sql)
+            cur.execute(add_unique_sql)
+            cur.execute(drop_is_file_sql)
 
     @asynccontextmanager
     async def _lifespan(self, app: FastAPI):
@@ -117,6 +147,7 @@ class NoticePicture:
             db = psycopg2.connect(**self.db_config)
             db.autocommit = True
             self.app.state.db = db
+            self.ensure_table(db)
         else:
             try:
                 with db.cursor() as cur:
@@ -125,57 +156,105 @@ class NoticePicture:
                 db = psycopg2.connect(**self.db_config)
                 db.autocommit = True
                 self.app.state.db = db
+                self.ensure_table(db)
         return db
+
+    def _ensure_device_placeholder(self, db, device: str) -> None:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT 1
+                FROM notice_picture
+                WHERE device = %s
+                LIMIT 1
+                """,
+                (device,),
+            )
+            if cur.fetchone() is None:
+                cur.execute(
+                    """
+                    INSERT INTO notice_picture (url, device)
+                    VALUES (%s, %s)
+                    ON CONFLICT (device) DO NOTHING
+                    """,
+                    ("", device),
+                )
 
     def _register_routes(self) -> None:
         app = self.app
         get_db = self.get_db
 
+        class PictureUrlUpdate(BaseModel):
+            device: str
+            filename: str
+
         @app.get("/", summary="获取图片URL", response_description="返回当前的图片URL")
-        def get_video() -> Dict[str, Optional[str]]:
+        def get_video(device: str = "default") -> Dict[str, Optional[str]]:
             """
             获取当前存储的图片URL（兼容原接口路径 / ）
             返回格式: {"url": "当前的图片地址"}
             """
             try:
                 db = get_db()
+                self._ensure_device_placeholder(db, device)
                 with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
-                    # 修复：移除id依赖，取最后一条（通过ctid伪列，PostgreSQL内置行标识）
-                    cur.execute("SELECT url FROM notice_picture ORDER BY ctid DESC LIMIT 1")
+                    cur.execute(
+                        """
+                        SELECT url
+                        FROM notice_picture
+                        WHERE device = %s
+                          AND url <> ''
+                          AND url LIKE 'http%%'
+                        ORDER BY ctid DESC
+                        LIMIT 1
+                        """,
+                        (device,),
+                    )
                     row = cur.fetchone()
-                    if row:
+                    if row and row["url"]:
                         return {"url": row["url"]}
                     return {"url": None}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
 
         @app.put("/", summary="修改图片URL", response_description="返回修改后的图片URL")
-        def update_picture_url(new_url: str = Body(..., embed=True, description="新的图片URL")) -> Dict[str, str]:
+        def update_picture_url(payload: PictureUrlUpdate) -> Dict[str, str]:
             """
             修改图片URL（新增接口）
             - 请求体参数: new_url (必填) - 新的图片URL地址
             - 返回格式: {"url": "修改后的图片地址"}
             """
             # 验证URL非空
-            if not new_url or not new_url.strip():
-                raise HTTPException(status_code=400, detail="URL不能为空")
-            
-            clean_url = new_url.strip()
+            if not payload.filename or not payload.filename.strip():
+                raise HTTPException(status_code=400, detail="文件名不能为空")
+
+            safe_name = os.path.basename(payload.filename.strip())
+            if not safe_name:
+                raise HTTPException(status_code=400, detail="文件名不能为空")
+
+            full_url = _build_public_url(safe_name)
             try:
                 db = get_db()
+                self._ensure_device_placeholder(db, payload.device)
                 with db.cursor() as cur:
-                    # 步骤1：检查表中是否有数据
-                    cur.execute("SELECT COUNT(*) FROM notice_picture")
-                    count = cur.fetchone()[0]
-                    
-                    if count > 0:
-                        # 有数据：先清空旧数据（原逻辑只有单条URL，清空后插入新的更简单）
-                        cur.execute("DELETE FROM notice_picture")
-                    
-                    # 步骤2：插入新URL（保证表中始终只有一条数据）
-                    cur.execute("INSERT INTO notice_picture (url) VALUES (%s)", (clean_url,))
+                    cur.execute(
+                        """
+                        DELETE FROM notice_picture
+                        WHERE device = %s
+                        AND url LIKE 'http%%'
+                        """,
+                        (payload.device,),
+                    )
+                    cur.execute(
+                        """
+                        INSERT INTO notice_picture (url, device)
+                        VALUES (%s, %s)
+                        ON CONFLICT (device) DO UPDATE SET url = EXCLUDED.url
+                        """,
+                        (full_url, payload.device),
+                    )
                 
-                return {"url": clean_url}
+                return {"url": full_url}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
 
@@ -198,7 +277,9 @@ class NoticePicture:
             return {"items": items}
 
         @app.post("/upload", summary="上传图片", response_description="返回上传后的文件名")
-        async def upload_picture(file: UploadFile = File(..., description="上传的图片文件")) -> Dict[str, str]:
+        async def upload_picture(
+            file: UploadFile = File(..., description="上传的图片文件"),
+        ) -> Dict[str, str]:
             """
             上传图片到指定目录
             返回格式: {"filename": "上传后的文件名"}
@@ -212,15 +293,15 @@ class NoticePicture:
 
             picture_dir = _ensure_picture_dir(create_if_missing=True)
             target_path = os.path.join(picture_dir, safe_name)
-            if os.path.exists(target_path):
-                raise HTTPException(status_code=409, detail="文件已存在")
-
-            try:
-                with open(target_path, "wb") as target:
-                    shutil.copyfileobj(file.file, target)
-            except Exception as exc:
-                raise HTTPException(status_code=500, detail=f"上传失败: {str(exc)}") from exc
-            finally:
+            if not os.path.exists(target_path):
+                try:
+                    with open(target_path, "wb") as target:
+                        shutil.copyfileobj(file.file, target)
+                except Exception as exc:
+                    raise HTTPException(status_code=500, detail=f"上传失败: {str(exc)}") from exc
+                finally:
+                    await file.close()
+            else:
                 await file.close()
 
             return {"filename": safe_name}

@@ -55,7 +55,7 @@ async function initRenmin() {
   };
 
   try {
-    const res = await fetch('http://localhost:9000/renmin/', { cache: 'no-store' });
+    const res = await apiGet('/renmin/', 8000);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     let data;

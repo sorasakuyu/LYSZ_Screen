@@ -12,6 +12,7 @@ import {
 import axios from 'axios'
 import clsx from 'clsx'
 import { useAuthStore } from '../stores/authStore'
+import { useDeviceStore } from '../stores/deviceStore'
 
 const api = axios.create({
   baseURL: '/days-api'
@@ -28,10 +29,11 @@ export default function DaysManage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const user = useAuthStore((state) => state.user)
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
+  const { currentDevice } = useDeviceStore()
 
   const fetchDays = async () => {
     try {
-      const res = await api.get('/list')
+      const res = await api.get(`/list?device=${currentDevice?.device_id}`)
       setDays(res.data)
     } catch (err) {
       console.error('获取倒数日失败:', err)
@@ -41,8 +43,10 @@ export default function DaysManage() {
   }
 
   useEffect(() => {
-    fetchDays()
-  }, [])
+    if (currentDevice) {
+      fetchDays()
+    }
+  }, [currentDevice])
 
   const calculateDaysLeft = (dateStr) => {
     const target = new Date(dateStr)
@@ -80,9 +84,9 @@ export default function DaysManage() {
     setSubmitting(true)
     try {
       if (modalMode === 'add') {
-        await api.post('/', formData)
+        await api.post(`/?device=${currentDevice?.device_id}`, { ...formData, device: currentDevice?.device_id })
       } else {
-        await api.put(`/${editId}`, formData)
+        await api.put(`/${editId}?device=${currentDevice?.device_id}`, formData)
       }
       setModalOpen(false)
       fetchDays()
@@ -95,7 +99,7 @@ export default function DaysManage() {
 
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/${id}`)
+      await api.delete(`/${id}?device=${currentDevice?.device_id}`)
       setDeleteConfirm(null)
       fetchDays()
     } catch (err) {

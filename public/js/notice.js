@@ -1,5 +1,4 @@
 function initNotice(){
-	const endpoints = ['http://localhost:9000/notice/'];
 	let dailyTimer = null;
 
 	function escapeHtml(s){
@@ -9,13 +8,6 @@ function initNotice(){
 			.replace(/>/g, '&gt;')
 			.replace(/"/g, '&quot;')
 			.replace(/'/g, '&#39;');
-	}
-
-	function fetchWithTimeout(url, ms = 60000){
-		const ctrl = new AbortController();
-		const t = setTimeout(() => ctrl.abort(), ms);
-		return fetch(url, { signal: ctrl.signal, cache: 'no-store' })
-			.finally(() => clearTimeout(t));
 	}
 
 	async function loadNotice(){
@@ -30,22 +22,21 @@ function initNotice(){
 		let ok = false;
 		let items = [];
 
-		for (const url of endpoints){
-			try {
-				const res = await fetchWithTimeout(url);
-				if (!res.ok) continue;
-				const data = await res.json();
+		try {
+			const res = await apiGet('/notice/', 60000);
+			if (!res.ok) throw new Error('fetch failed');
+			const data = await res.json();
 
-				if (typeof data.title === 'string') titleEl.textContent = data.title;
-				const context = typeof data.context === 'string' ? data.context : '';
-				if (context){
-					items = [context];
-					ok = true;
-					break;
-				}
-			} catch(e) {
-				// 尝试下一个端点
+			if (typeof data.title === 'string') titleEl.textContent = data.title;
+			const context = typeof data.context === 'string' ? data.context : '';
+			if (context){
+				items = [context];
+				ok = true;
 			}
+		} catch(e) {
+			console.warn('通知接口不可用或被CORS拦截，保留占位内容');
+			textBox.innerHTML = fallback;
+			return;
 		}
 
 		if (!ok){
@@ -77,7 +68,7 @@ function initNotice(){
 		const varHeight = root.getPropertyValue('--notice-height').trim();
 		const varSpeed = root.getPropertyValue('--notice-speed').trim();
 		const viewportH = varHeight ? parseInt(varHeight, 10) : 360;
-		let speed = varSpeed ? parseFloat(varSpeed) : 30; // px/s
+		let speed = varSpeed ? parseFloat(varSpeed) : 30;
 
 		const viewport = document.createElement('div');
 		viewport.style.height = viewportH + 'px';

@@ -1,12 +1,13 @@
 import os
 import shutil
 from contextlib import asynccontextmanager
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import psycopg2
-from fastapi import FastAPI, HTTPException, UploadFile, File, Body
+from fastapi import FastAPI, HTTPException, UploadFile, File, Body, Form
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg2 import extras
+from pydantic import BaseModel
 
 DB_CONFIG = {
 	"host": os.getenv("PG_HOST", "localhost"),
@@ -16,7 +17,7 @@ DB_CONFIG = {
 	"port": int(os.getenv("PG_PORT", "5432")),
 }
 
-VIDEO_ROOT = os.getenv("VIDEO_ROOT", r"E:\Desktop\openlist\Video")
+VIDEO_ROOT = os.getenv("VIDEO_ROOT", r"/media/zhngjah/Data/lysz/BigScreen/Data/Video")
 VIDEO_PUBLIC_BASE = os.getenv("VIDEO_PUBLIC_BASE", "http://localhost/video/")
 VIDEO_THUMB_SUBDIR = os.getenv("VIDEO_THUMB_SUBDIR", "thumbs")
 VIDEO_PREVIEW_TIME = float(os.getenv("VIDEO_PREVIEW_TIME", "1"))
@@ -107,16 +108,41 @@ class VideoService:
 	def ensure_table(self, db) -> None:
 		create_sql = """
 		CREATE TABLE IF NOT EXISTS video (
-			url TEXT NOT NULL
+			url TEXT NOT NULL,
+			device TEXT NOT NULL DEFAULT 'default'
 		);
 		"""
-		insert_default_sql = """
-		INSERT INTO video (url)
-		VALUES ('url')
+		drop_pk_sql = """
+		ALTER TABLE video
+		DROP CONSTRAINT IF EXISTS video_pkey
+		"""
+		add_unique_sql = """
+		DO $$
+		BEGIN
+			IF NOT EXISTS (
+				SELECT 1
+				FROM pg_constraint
+				WHERE conname = 'video_device_url_key'
+			) THEN
+				ALTER TABLE video
+				ADD CONSTRAINT video_device_url_key UNIQUE (device, url);
+			END IF;
+		END $$;
+		"""
+		alter_device_sql = """
+		ALTER TABLE video
+		ADD COLUMN IF NOT EXISTS device TEXT NOT NULL DEFAULT 'default'
+		"""
+		drop_is_file_sql = """
+		ALTER TABLE video
+		DROP COLUMN IF EXISTS is_file
 		"""
 		with db.cursor() as cur:
 			cur.execute(create_sql)
-			cur.execute(insert_default_sql)
+			cur.execute(alter_device_sql)
+			cur.execute(drop_pk_sql)
+			cur.execute(drop_is_file_sql)
+			cur.execute(add_unique_sql)
 
 	@asynccontextmanager
 	async def _lifespan(self, app: FastAPI):
@@ -143,6 +169,7 @@ class VideoService:
 			db = psycopg2.connect(**self.db_config)
 			db.autocommit = True
 			self.app.state.db = db
+			self.ensure_table(db)
 		else:
 			try:
 				with db.cursor() as cur:
@@ -151,33 +178,54 @@ class VideoService:
 				db = psycopg2.connect(**self.db_config)
 				db.autocommit = True
 				self.app.state.db = db
+				self.ensure_table(db)
 		return db
+
+	def _ensure_device_placeholder(self, db, device: str) -> None:
+		return None
 
 	def _register_routes(self) -> None:
 		app = self.app
 		get_db = self.get_db
 
+		class VideoUrlUpdate(BaseModel):
+			device: str
+			filename: str
+
 		@app.get("/")
-		def get_video() -> Dict[str, str]:
+		def get_video(device: str = "default") -> Dict[str, Optional[str]]:
 			try:
 				db = get_db()
 				with db.cursor(cursor_factory=extras.RealDictCursor) as cur:
-					cur.execute("SELECT url FROM video ORDER BY url ASC")
-					rows = cur.fetchall()
-					return {"url": r["url"] for r in rows}
+					cur.execute(
+						"""
+						SELECT url
+						FROM video
+						WHERE device = %s
+						  AND url <> ''
+						  AND url LIKE 'http%%'
+						ORDER BY ctid DESC
+						LIMIT 1
+						""",
+						(device,),
+					)
+					row = cur.fetchone()
+					if row and row["url"]:
+						return {"url": row["url"]}
+					return {"url": None}
 			except Exception as e:
 				raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
 
 		@app.put("/", summary="修改视频URL", response_description="返回修改后的URL")
-		def update_video_url(filename: str = Body(..., embed=True, description="视频文件名")) -> Dict[str, str]:
+		def update_video_url(payload: VideoUrlUpdate) -> Dict[str, str]:
 			"""
 			修改视频URL（只需传入文件名）
 			返回格式: {"url": "http://localhost/Video/filename.mp4"}
 			"""
-			if not filename or not filename.strip():
+			if not payload.filename or not payload.filename.strip():
 				raise HTTPException(status_code=400, detail="文件名不能为空")
 
-			safe_name = os.path.basename(filename.strip())
+			safe_name = os.path.basename(payload.filename.strip())
 			if not safe_name:
 				raise HTTPException(status_code=400, detail="文件名不能为空")
 
@@ -185,8 +233,20 @@ class VideoService:
 			try:
 				db = get_db()
 				with db.cursor() as cur:
-					cur.execute("DELETE FROM video")
-					cur.execute("INSERT INTO video (url) VALUES (%s)", (full_url,))
+					cur.execute(
+						"""
+						DELETE FROM video
+						WHERE device = %s
+						""",
+						(payload.device,),
+					)
+					cur.execute(
+						"""
+						INSERT INTO video (url, device)
+						VALUES (%s, %s)
+						""",
+						(full_url, payload.device),
+					)
 				return {"url": full_url}
 			except Exception as e:
 				raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
@@ -220,7 +280,10 @@ class VideoService:
 			return {"items": items}
 
 		@app.post("/upload", summary="上传视频到视频目录", response_description="返回上传后的文件名")
-		async def upload_video(file: UploadFile = File(..., description="上传的视频文件")) -> Dict[str, str]:
+		async def upload_video(
+			device: str = Form(..., description="视频归属标识"),
+			file: UploadFile = File(..., description="上传的视频文件"),
+		) -> Dict[str, str]:
 			"""
 			上传视频到视频目录
 			返回格式: {"filename": "上传后的文件名"}
@@ -234,15 +297,15 @@ class VideoService:
 
 			video_dir = _ensure_video_dir(create_if_missing=True)
 			target_path = os.path.join(video_dir, safe_name)
-			if os.path.exists(target_path):
-				raise HTTPException(status_code=409, detail="文件已存在")
-
-			try:
-				with open(target_path, "wb") as target:
-					shutil.copyfileobj(file.file, target)
-			except Exception as exc:
-				raise HTTPException(status_code=500, detail=f"上传失败: {str(exc)}") from exc
-			finally:
+			if not os.path.exists(target_path):
+				try:
+					with open(target_path, "wb") as target:
+						shutil.copyfileobj(file.file, target)
+				except Exception as exc:
+					raise HTTPException(status_code=500, detail=f"上传失败: {str(exc)}") from exc
+				finally:
+					await file.close()
+			else:
 				await file.close()
 
 			return {"filename": safe_name}

@@ -1,12 +1,5 @@
 async function initDays() {
-  const API_URL = 'http://localhost:9000/days/';
   const ROTATE_MS = 5 * 1000;
-
-  const fetchWithTimeout = (url, ms = 8000) => {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), ms);
-    return fetch(url, { signal: ctrl.signal, cache: 'no-store' }).finally(() => clearTimeout(timer));
-  };
 
   const byDate = (items) =>
     items
@@ -44,7 +37,7 @@ async function initDays() {
 
     let list = [];
     try {
-      const res = await fetchWithTimeout(API_URL, 8000);
+      const res = await apiGet('/days/', 8000);
       if (!res.ok) throw new Error(`status ${res.status}`);
       const data = await res.json();
       list = Array.isArray(data) ? byDate(data) : [];

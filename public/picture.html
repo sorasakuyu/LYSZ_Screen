@@ -12,6 +12,8 @@
 	<link rel="stylesheet" href="css/weather.css">
 	<link rel="stylesheet" href="css/days.css">
 	<link rel="stylesheet" href="css/picture.css">
+	<script src="js/device.js"></script>
+	<script src="js/api.js"></script>
 	<script src="js/time.js"></script>
 	<script src="js/picture.js"></script>
 	<script src="js/news.js"></script>
@@ -158,7 +160,7 @@
 		initWeatherAlert();
 		initDays();
 		setInterval(() => {
-			window.location.href = 'http://0.0.0.0';
+			window.location.href = 'http://localhost';
 		}, 60000);
 	</script>
 </body>
