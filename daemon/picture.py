@@ -20,7 +20,7 @@ DB_CONFIG = {
 }
 
 PICTURE_ROOT = os.getenv("PICTURE_ROOT", r"/media/zhngjah/Data/lysz/BigScreen/Data/Picture")
-PICTURE_PUBLIC_BASE = os.getenv("PICTURE_PUBLIC_BASE", "http://localhost/picture/")
+PICTURE_PUBLIC_BASE = os.getenv("PICTURE_PUBLIC_BASE", "http://kaguya.lysz.sorasaku.vip/Picture/")
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 THUMBNAIL_SIZE = (200, 200)
 
