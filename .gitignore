@@ -10,3 +10,4 @@ public - 副本/
 manage/.trae
 manage/client/node_modules/
 manage/node_modules/
+manage/client/dist/

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
     
-    const API_BASE = 'http://localhost:9000';
+    const API_BASE = 'http://192.168.1.5:9000';
     
     function fetchWithTimeout(url, ms, options) {
         const controller = new AbortController();

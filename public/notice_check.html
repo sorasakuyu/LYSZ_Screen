@@ -19,7 +19,7 @@
 			const timeoutId = setTimeout(() => {
 				redirected = true;
 				controller.abort();
-				window.location.replace('http://localhost/');
+				window.location.replace('http://192.168.1.5/');
 			}, 5000);
 
 			try {
@@ -38,7 +38,7 @@
 				if (redirected) return;
 				clearTimeout(timeoutId);
 				console.error('Config fetch error:', err);
-				window.location.replace('http://localhost/');
+				window.location.replace('http://192.168.1.5/');
 			}
 		})();
 	</script>

@@ -1,6 +1,6 @@
 function initNews(){
   const endpoints = [
-    'http://localhost:4399/v2/60s'
+    'http://192.168.1.5:4399/v2/60s'
   ];
   let dailyTimer = null;
 
