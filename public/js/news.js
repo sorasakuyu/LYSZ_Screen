@@ -1,6 +1,6 @@
 function initNews(){
   const endpoints = [
-    'http://192.168.1.5:4399/v2/60s'
+    'http://news.api.kaguya.lysz.sorasaku.vip/v2/60s'
   ];
   let dailyTimer = null;
 

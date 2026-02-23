@@ -186,7 +186,7 @@
 		initWeatherAlert();
 		initDays();
 		setInterval(() => {
-			window.location.href = 'http://192.168.1.5';
+			window.location.href = 'http://kaguya.lysz.sorasaku.vip/';
 		}, 60000);
 
 		async function initVideoArea() {
@@ -201,7 +201,7 @@
 				player.src = url;
 				empty.style.display = 'none';
 				player.addEventListener('ended', () => {
-					window.location.href = 'http://192.168.1.5';
+					window.location.href = 'http://kaguya.lysz.sorasaku.vip/';
 				});
 				player.play().catch(() => {});
 			} catch (err) {

@@ -24,7 +24,7 @@
 
 			try {
 				const device = window.getDeviceCode();
-				const checkRes = await fetch(`http://192.168.1.5:9000/device/check?device=${device}`, {
+				const checkRes = await fetch(`http://daemon.api.kaguya.lysz.sorasaku.vip:9000/device/check?device=${device}`, {
 					signal: controller.signal,
 					cache: 'no-store'
 				});
