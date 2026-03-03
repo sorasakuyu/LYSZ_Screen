@@ -27,9 +27,9 @@ class ConfigService:
     def _configure_app(self) -> None:
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],  # 生产环境建议限定具体域名
+            allow_origins=["*"],
             allow_credentials=True,
-            allow_methods=["GET", "OPTIONS", "PUT", "POST"],  # 新增 PUT/POST 方法
+            allow_methods=["GET", "OPTIONS", "PUT", "POST"],
             allow_headers=["*"],
         )
 

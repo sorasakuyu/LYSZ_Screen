@@ -21,7 +21,6 @@ class AddRequest(BaseModel):
     defination: Optional[str] = None
     theme: Optional[str] = None
 
-# 新增编辑请求模型（支持部分字段更新）
 class UpdateRequest(BaseModel):
     content: Optional[str] = None
     defination: Optional[str] = None
@@ -44,7 +43,7 @@ class RenminDaily:
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=False,
-            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # 新增 PUT/DELETE 方法
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
             allow_headers=["*"],
         )
         self.app.mount("/public", StaticFiles(directory=self.public_dir), name="public")
@@ -162,7 +161,6 @@ class RenminDaily:
                     """
                     cur.execute(sql)
                     rows = cur.fetchall()
-                    # 格式化返回结果
                     result = [
                         {
                             "id": row["id"],
@@ -245,7 +243,6 @@ class RenminDaily:
                 raise HTTPException(status_code=500, detail=f"删除失败: {str(e)}")
 
 
-# 可在其他程序中导入 RenminDaily 并复用 app 实例
 api = RenminDaily()
 app = api.app
 

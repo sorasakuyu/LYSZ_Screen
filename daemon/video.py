@@ -292,8 +292,8 @@ class VideoService:
 				raise HTTPException(status_code=400, detail="文件名不能为空")
 
 			safe_name = os.path.basename(file.filename)
-			if not _is_video_file(safe_name):  # ← 改这里：_is_image_file → _is_video_file
-				raise HTTPException(status_code=400, detail="仅支持视频格式")  # ← 改这里：图片 → 视频
+			if not _is_video_file(safe_name):
+				raise HTTPException(status_code=400, detail="仅支持视频格式")
 
 			video_dir = _ensure_video_dir(create_if_missing=True)
 			target_path = os.path.join(video_dir, safe_name)

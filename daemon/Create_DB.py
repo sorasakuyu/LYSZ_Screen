@@ -163,7 +163,7 @@ class Create_Notice_Picture:
         insert_default_sql = """
         INSERT INTO notice_picture (device, url)
         VALUES
-            ('default', 'http://0.0.0.0/test/pic.jpg')
+            ('default', '暂未设置')
         ON CONFLICT (url) DO NOTHING;
         """
         with self.conn.cursor() as cur:
@@ -186,7 +186,7 @@ class Create_Device_List:
         insert_default_sql = """
         INSERT INTO device_list (device_id, remark)
         VALUES
-            ('default', '测试设备')
+            ('default', '占位设备，请删除')
         ON CONFLICT (device_id) DO NOTHING;
         """
         with self.conn.cursor() as cur:

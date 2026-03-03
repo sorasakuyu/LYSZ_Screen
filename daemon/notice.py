@@ -16,14 +16,13 @@ DB_CONFIG = {
     "port": int(os.getenv("PG_PORT", "5432")),
 }
 
-# 修复 Pydantic V2 警告：schema_extra → json_schema_extra
 class NoticeUpdateRequest(BaseModel):
     device: str = "default"
     title: str = "通知"  # 默认修改标题为"通知"的记录
     context: str  # 通知内容（必填）
 
     class Config:
-        json_schema_extra = {  # 替换原 schema_extra
+        json_schema_extra = {
             "example": {
                 "device": "default",
                 "title": "通知",
@@ -45,7 +44,6 @@ class NoticeText:
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=False,
-            # 新增 PUT/POST 方法（支持修改接口）
             allow_methods=["GET", "OPTIONS", "PUT", "POST"],
             allow_headers=["*"],
         )
@@ -142,7 +140,6 @@ class NoticeText:
         app = self.app
         get_db = self.get_db
 
-        # 原有：获取通知内容接口
         @app.get("/", summary="获取通知内容")
         def get_config(device: str = "default") -> Dict[str, str]:
             try:
@@ -172,17 +169,14 @@ class NoticeText:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
 
-        # 新增：修改通知内容接口（PUT 方法，语义更贴合更新）
         @app.put("/update-notice", summary="修改通知内容")
         def update_notice(notice_data: NoticeUpdateRequest = Body(...)):
-            # 校验内容非空
             if not notice_data.context or notice_data.context.strip() == "":
                 raise HTTPException(status_code=400, detail="通知内容不能为空")
             
             try:
                 db = get_db()
                 with db.cursor() as cur:
-                    # UPSERT：存在则更新，不存在则插入
                     update_sql = """
                     INSERT INTO notice_text (device, title, context)
                     VALUES (%s, %s, %s)
@@ -200,7 +194,6 @@ class NoticeText:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"修改失败: {str(e)}")
 
-        # 可选：POST 方法兼容（部分前端习惯用 POST 更新）
         @app.post("/update-notice", summary="修改通知内容（POST 兼容）")
         def update_notice_post(notice_data: NoticeUpdateRequest = Body(...)):
             return update_notice(notice_data)

@@ -22,7 +22,7 @@ async function initDays() {
       ui.value.textContent = '--';
       ui.date.textContent = '目标日：--';
     } else {
-      ui.label.innerHTML = `${item.content} 还有`;
+      ui.label.innerHTML = `距 ${item.content} 还有`;
       ui.value.textContent = daysLeft(item.time);
       ui.date.textContent = `目标日：${item.time}`;
     }

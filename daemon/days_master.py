@@ -21,7 +21,7 @@ DB_CONFIG = {
 class DaysMasterCreate(BaseModel):
     device: str = "default"
     content: str
-    time: date  # 仅日期，如 "2026-02-08"
+    time: date
 
 
 class DaysMasterUpdate(BaseModel):
@@ -34,7 +34,7 @@ class DaysMaster:
     def __init__(self, db_config: Dict[str, Any] = None, public_dir: str = "public", db=None) -> None:
         self.db_config = db_config or DB_CONFIG
         self.public_dir = public_dir
-        self._external_db = db  # if provided, lifespan will reuse it
+        self._external_db = db
         self.app = FastAPI(lifespan=self._lifespan)
         self._configure_app()
         self._register_routes()
@@ -271,7 +271,6 @@ class DaysMaster:
                 raise HTTPException(status_code=500, detail=f"删除失败: {str(e)}")
 
 
-# 可在其他程序中导入 DaysMaster 并复用 app 实例
 api = DaysMaster()
 app = api.app
 

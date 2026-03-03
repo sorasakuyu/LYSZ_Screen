@@ -79,7 +79,7 @@ class NoticePicture:
             CORSMiddleware,
             allow_origins=["*"],
             allow_credentials=False,
-            allow_methods=["GET", "PUT", "POST", "OPTIONS"],  # 新增PUT/POST方法支持
+            allow_methods=["GET", "PUT", "POST", "OPTIONS"], 
             allow_headers=["*"],
         )
 
