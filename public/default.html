@@ -162,9 +162,31 @@
 		initWeather();
 		initWeatherAlert();
 		initDays();
-		setInterval(() => {
-			window.location.href = 'http://kaguya.lysz.sorasaku.vip/';
-		}, 60000);
+
+		async function checkConfig() {
+			try {
+				const res = await apiGet('/config/', 8000);
+				if (!res.ok) {
+					window.location.href = '/error.html';
+					return;
+				}
+				const data = await res.json();
+				
+				if (data && data.mode === 'default') {
+					const now = new Date();
+					if (now.getHours() === 10 && now.getMinutes() === 0) {
+						location.reload();
+					}
+				} else {
+					window.location.href = 'http://kaguya.lysz.sorasaku.vip/';
+				}
+			} catch (err) {
+				console.warn('配置检查失败', err);
+				window.location.href = '/error.html';
+			}
+		}
+
+		setInterval(checkConfig, 60000);
 	</script>
 </body>
 </html>

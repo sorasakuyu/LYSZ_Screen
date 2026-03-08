@@ -4,7 +4,7 @@ async function initWeather() {
   const STATUS_URL = 'xiaomi_weather_status.json';
   const ICON_BASE = 'img/weather';
   const FALLBACK_CODE = 99;
-  const REFRESH_MS = 10 * 60 * 1000;
+  const REFRESH_MS = 5 * 60 * 1000;
 
   const fetchWithTimeout = (url, ms = 8000, options = {}) => {
     const ctrl = new AbortController();

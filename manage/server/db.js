@@ -6,8 +6,8 @@ const pool = new Pool({
   host: 'localhost',
   port: 5432,
   database: 'auth',
-  user: 'postgres',
-  password: 'xx090202'
+  user: 'auth',
+  password: 'Gxtx8tCSxfnkFsNn'
 })
 
 pool.on('error', (err) => {

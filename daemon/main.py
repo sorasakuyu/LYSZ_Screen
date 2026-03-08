@@ -13,9 +13,9 @@ from device import DeviceService
 
 DB_CONFIG = {
     "host": os.getenv("PG_HOST", "localhost"),
-    "user": os.getenv("PG_USER", "postgres"),
-    "password": os.getenv("PG_PASSWORD", "EdbzFZGzs8ZDiMZ4"),
-    "dbname": os.getenv("PG_DATABASE", "kaguya2"),
+    "user": os.getenv("PG_USER", "kaguya"),
+    "password": os.getenv("PG_PASSWORD", "FX7R4Ap3imY7NNzy"),
+    "dbname": os.getenv("PG_DATABASE", "kaguya"),
     "port": int(os.getenv("PG_PORT", "5432")),
 }
 

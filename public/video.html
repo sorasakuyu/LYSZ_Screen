@@ -185,9 +185,6 @@
 		initWeather();
 		initWeatherAlert();
 		initDays();
-		setInterval(() => {
-			window.location.href = 'http://kaguya.lysz.sorasaku.vip/';
-		}, 60000);
 
 		async function initVideoArea() {
 			const player = document.getElementById('video-player');
@@ -200,8 +197,24 @@
 				if (!url) throw new Error('no video url');
 				player.src = url;
 				empty.style.display = 'none';
-				player.addEventListener('ended', () => {
-					window.location.href = 'http://kaguya.lysz.sorasaku.vip/';
+				player.addEventListener('ended', async () => {
+					try {
+						const res = await apiGet('/config/', 8000);
+						if (!res.ok) {
+							window.location.href = '/error.html';
+							return;
+						}
+						const data = await res.json();
+						
+						if (data && data.mode === 'video') {
+							// 继续停留在当前页面
+						} else {
+							window.location.href = 'http://kaguya.lysz.sorasaku.vip/';
+						}
+					} catch (err) {
+						console.warn('配置检查失败', err);
+						window.location.href = '/error.html';
+					}
 				});
 				player.play().catch(() => {});
 			} catch (err) {
