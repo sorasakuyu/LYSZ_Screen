@@ -49,8 +49,8 @@ jobs:
     - name: 验证图标文件存在
       working-directory: ./client  # 切换到client目录
       run: |
-        if (Test-Path "logo.png") {
-          Write-Output "图标文件存在: client/logo.png"
+        if (Test-Path "img/logo.png") {
+          Write-Output "图标文件存在: client/img/logo.png"
         } else {
           Write-Output "错误: 图标文件不存在，退出..."
           exit 1
