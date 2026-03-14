@@ -47,5 +47,5 @@ def open_fullscreen(url):
 
 
 if __name__ == "__main__":
-    TARGET_URL = "https://kaguya.lysz.sorasaku.vip/"
+    TARGET_URL = "http://kaguya.lysz.sorasaku.vip/"
     open_fullscreen(TARGET_URL)
