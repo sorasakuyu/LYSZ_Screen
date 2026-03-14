@@ -1,6 +1,6 @@
 function initNews(){
   const endpoints = [
-    'http://news.api.kaguya.lysz.sorasaku.vip/v2/60s'
+    'https://60s.cynara.my/v2/60s'
   ];
   let dailyTimer = null;
 
