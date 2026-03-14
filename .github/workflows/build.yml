@@ -59,13 +59,13 @@ jobs:
     - name: 转换图标格式
       working-directory: ./client  # 切换到client目录
       run: |
-        python -c "from PIL import Image; Image.open('logo.png').save('logo.ico', format='ICO', sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])"
-        Write-Output "图标已转换为 ICO 格式 (保存到 client/logo.ico)"
+        python -c "from PIL import Image; Image.open('img/logo.png').save('img/logo.ico', format='ICO', sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])"
+        Write-Output "图标已转换为 ICO 格式 (保存到 client/img/logo.ico)"
 
     - name: 编译程序
       working-directory: ./client  # 切换到client目录
       run: |
-        pyinstaller --onefile --windowed --icon=logo.ico --name="Client" main.py
+        pyinstaller --onefile --windowed --icon=img/logo.ico --name="Client" main.py
         Write-Output "Windows 程序编译完成"
 
     - name: 创建安装包
