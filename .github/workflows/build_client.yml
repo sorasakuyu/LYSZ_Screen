@@ -1,4 +1,4 @@
-name: 编译管理端
+name: 编译启动器
 
 on:
   push:
@@ -25,10 +25,10 @@ jobs:
         Write-Output "====================="
 
     - name: 检查主程序文件
-      working-directory: ./manage_client  # 切换到manage_client目录
+      working-directory: ./client  # 切换到client目录
       run: |
         if (Test-Path "main.py") {
-          Write-Output "主程序文件存在: manage_client/main.py"
+          Write-Output "主程序文件存在: client/main.py"
           Get-Content main.py -TotalCount 5  # 显示文件前5行
         } else {
           Write-Output "错误: 主程序文件不存在!"
@@ -47,23 +47,23 @@ jobs:
         pip install pillow
 
     - name: 验证图标文件存在
-      working-directory: ./manage_client  # 切换到manage_client目录
+      working-directory: ./client  # 切换到client目录
       run: |
         if (Test-Path "img/logo.png") {
-          Write-Output "图标文件存在: manage_client/img/logo.png"
+          Write-Output "图标文件存在: client/img/logo.png"
         } else {
           Write-Output "错误: 图标文件不存在，退出..."
           exit 1
         }
 
     - name: 转换图标格式
-      working-directory: ./manage_client  # 切换到manage_client目录
+      working-directory: ./client  # 切换到client目录
       run: |
         python -c "from PIL import Image; Image.open('img/logo.png').save('img/logo.ico', format='ICO', sizes=[(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)])"
-        Write-Output "图标已转换为 ICO 格式 (保存到 manage_client/img/logo.ico)"
+        Write-Output "图标已转换为 ICO 格式 (保存到 client/img/logo.ico)"
 
     - name: 编译程序
-      working-directory: ./manage_client  # 切换到manage_client目录
+      working-directory: ./client  # 切换到client目录
       run: |
         pyinstaller --onefile --windowed --icon=img/logo.ico --name="Client" main.py
         Write-Output "Windows 程序编译完成"
@@ -78,6 +78,6 @@ jobs:
     - name: 上传安装包
       uses: actions/upload-artifact@v4
       with:
-        name: ManageClient
-        path: manage_client/dist/installer/  # 调整上传路径到manage_client目录下
+        name: Client
+        path: client/dist/installer/  # 调整上传路径到client目录下
         retention-days: 7
