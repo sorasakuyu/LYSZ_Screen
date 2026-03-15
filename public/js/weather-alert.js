@@ -5,7 +5,7 @@
 (function(){
   // Try a list of candidate URLs (local test JSON first, then the configured API).
   const API_CANDIDATES = [
-    'https://weather.api.lysz.sorasaku.vip/weatheralert/v1/current/35.05280/118.34733'
+    'https://weather.api.lysz.sorasaku.vip/weather_mirror/data/weather-alert.json'
   ];
   const API_KEY = "7ff913a997ea42d5bd3bd8d1840aa0e5";
 

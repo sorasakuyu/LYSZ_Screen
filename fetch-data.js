@@ -7,7 +7,7 @@ const API_KEY = '7ff913a997ea42d5bd3bd8d1840aa0e5';
 const BASE_URL = 'https://ny4up3enmw.re.qweatherapi.com';
 
 // 创建数据存储目录
-const dataDir = path.join(__dirname, 'data');
+const dataDir = path.join(__dirname, 'weather_mirror', 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
