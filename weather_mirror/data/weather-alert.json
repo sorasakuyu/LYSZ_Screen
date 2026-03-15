@@ -1,6 +1,7 @@
 {
-  "code": "200",
-  "updateTime": "2026-03-15T11:03+08:00",
-  "fxLink": "https://www.qweather.com/weather/lanshan-101120911.html",
-  "alert": []
+  "metadata": {
+    "tag": "72e0bbd2711105a13eb4cbd3ba4df410a259b343d6fea3a2777cf247f2376dc8",
+    "zeroResult": true
+  },
+  "alerts": []
 }
