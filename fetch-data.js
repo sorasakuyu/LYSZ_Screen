@@ -18,7 +18,7 @@ async function fetchWeatherData() {
     // 获取天气预警数据
     const alertResponse = await axios.get(`${BASE_URL}/weatheralert/v1/current/35.05280/118.34733`, {
       headers: {
-        'API_KEY': API_KEY
+        'X-QW-Api-Key': API_KEY
       },
       compress: true
     });
@@ -30,7 +30,7 @@ async function fetchWeatherData() {
         location: '101120911'
       },
       headers: {
-        'API_KEY': API_KEY
+        'X-QW-Api-Key': API_KEY
       },
       compress: true
     });
