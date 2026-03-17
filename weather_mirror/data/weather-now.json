@@ -1,9 +1,9 @@
 {
   "code": "200",
-  "updateTime": "2026-03-17T23:43+08:00",
+  "updateTime": "2026-03-18T00:42+08:00",
   "fxLink": "https://www.qweather.com/weather/lanshan-101120911.html",
   "now": {
-    "obsTime": "2026-03-17T23:42+08:00",
+    "obsTime": "2026-03-18T00:40+08:00",
     "temp": "4",
     "feelsLike": "1",
     "icon": "399",
@@ -14,8 +14,8 @@
     "windSpeed": "2",
     "humidity": "93",
     "precip": "0.1",
-    "pressure": "1004",
-    "vis": "2",
+    "pressure": "1003",
+    "vis": "3",
     "cloud": "100",
     "dew": "5"
   },
