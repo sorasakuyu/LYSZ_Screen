@@ -1,11 +1,11 @@
 {
   "code": "200",
-  "updateTime": "2026-03-21T07:28+08:00",
+  "updateTime": "2026-03-21T07:51+08:00",
   "fxLink": "https://www.qweather.com/weather/lanshan-101120911.html",
   "now": {
-    "obsTime": "2026-03-21T07:26+08:00",
-    "temp": "5",
-    "feelsLike": "3",
+    "obsTime": "2026-03-21T07:50+08:00",
+    "temp": "6",
+    "feelsLike": "4",
     "icon": "502",
     "text": "霾",
     "wind360": "39",
