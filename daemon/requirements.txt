@@ -3,3 +3,4 @@ fastapi
 moviepy
 python-multipart
 psycopg2
+requests

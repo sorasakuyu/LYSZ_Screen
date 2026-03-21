@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import os
 import psycopg2
 
@@ -9,6 +10,7 @@ from video import VideoService
 from notice import NoticeText
 from picture import NoticePicture
 from device import DeviceService
+from weather import WeatherService
 
 
 DB_CONFIG = {
@@ -28,8 +30,19 @@ def create_app() -> FastAPI:
     notice_text_api = NoticeText(db_config=DB_CONFIG)
     notice_picture_api = NoticePicture(db_config=DB_CONFIG)
     device_api = DeviceService(db_config=DB_CONFIG)
+    weather_api = WeatherService()
 
     app = FastAPI()
+    
+    # Configure CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allows all origins, you can restrict this to specific domains
+        allow_credentials=True,
+        allow_methods=["*"],  # Allows all methods, including OPTIONS
+        allow_headers=["*"],  # Allows all headers, including X-QW-Api-Key
+    )
+    
     app.mount("/renmin", renmin_daily_api.app)
     app.mount("/days", days_master_api.app)
     app.mount("/config", config_api.app)
@@ -37,6 +50,7 @@ def create_app() -> FastAPI:
     app.mount("/notice", notice_text_api.app)
     app.mount("/picture", notice_picture_api.app)
     app.mount("/device", device_api.app)
+    app.mount("/weather", weather_api.app)
     return app
 
 
