@@ -1,5 +1,5 @@
 async function initWeather() {
-  const API_URL = 'https://weather.api.lysz.sorasaku.vip/weather_mirror/data/weather-now.json';
+  const API_URL = 'http://daemon.api.kaguya.lysz.sorasaku.vip:9000/weather/now';
   const API_KEY = '7ff913a997ea42d5bd3bd8d1840aa0e5';
   const STATUS_URL = 'xiaomi_weather_status.json';
   const ICON_BASE = 'img/weather';
