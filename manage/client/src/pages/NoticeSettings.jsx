@@ -385,44 +385,56 @@ export default function NoticeSettings() {
               {isAdmin && (
                 <div className="glass rounded-2xl p-6">
                   <h3 className="font-semibold text-gray-800 mb-4">上传图片</h3>
-
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    className={clsx(
-                      "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300",
-                      isDragging 
-                        ? "border-cyan-500 bg-cyan-50" 
-                        : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-                    )}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                    {uploading ? (
-                      <div className="flex flex-col items-center gap-3 w-full max-w-xs">
-                        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
-                        <span className="text-gray-500">上传中...</span>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-to-r from-cyan-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${uploadProgress}%` }}
-                          />
+                  <div className="flex gap-4">
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={clsx(
+                        "flex-1 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 min-h-[160px] flex items-center justify-center",
+                        isDragging 
+                          ? "border-cyan-500 bg-cyan-50" 
+                          : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                      )}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      {uploading ? (
+                        <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+                          <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                          <span className="text-gray-500">上传中...</span>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-gradient-to-r from-cyan-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-gray-400">{uploadProgress}%</span>
                         </div>
-                        <span className="text-sm text-gray-400">{uploadProgress}%</span>
-                      </div>
-                    ) : (
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <Upload className="w-8 h-8 text-gray-400" />
+                          <span className="text-gray-500">点击或拖拽图片到此处上传</span>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => window.open('http://daemon.api.kaguya.lysz.sorasaku.vip:5244/Image', 'resourceLibrary', 'width=1200,height=800,scrollbars=yes,resizable=yes')}
+                      className="flex-1 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 min-h-[160px] flex items-center justify-center border-purple-300 hover:border-purple-400 hover:bg-purple-50 bg-purple-50/30"
+                    >
                       <div className="flex flex-col items-center gap-2">
-                        <Upload className="w-8 h-8 text-gray-400" />
-                        <span className="text-gray-500">点击或拖拽图片到此处上传</span>
+                        <svg className="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="text-purple-600 font-medium">打开资源库</span>
                       </div>
-                    )}
+                    </button>
                   </div>
                 </div>
               )}
