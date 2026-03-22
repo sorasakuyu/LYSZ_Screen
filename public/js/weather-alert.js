@@ -4,7 +4,7 @@
 */
 (function(){
   const API_CANDIDATES = [
-    'http://localhost:9000/weather/3d'
+    'http://daemon.api.kaguya.lysz.sorasaku.vip:9000/weather/3d'
   ];
   const API_KEY = "7ff913a997ea42d5bd3bd8d1840aa0e5";
 
