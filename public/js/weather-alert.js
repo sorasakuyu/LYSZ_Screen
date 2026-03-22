@@ -87,6 +87,6 @@
 
   window.initWeatherAlert = function(){
     renderAlert();
-    setInterval(renderAlert, 5 * 60 * 1000);
+    setInterval(renderAlert, 10 * 60 * 1000);
   };
 })();

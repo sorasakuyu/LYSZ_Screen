@@ -4,3 +4,4 @@ moviepy
 python-multipart
 psycopg2
 requests
+httpx

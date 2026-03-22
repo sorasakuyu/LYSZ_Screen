@@ -1,10 +1,14 @@
-async function initWeather() {
+/* weather.js
+   Fetch weather data from QWeather API and render into the page.
+   Exposes window.initWeather() to initialize and auto-refresh.
+*/
+(function(){
   const API_URL = 'http://daemon.api.kaguya.lysz.sorasaku.vip:9000/weather/now';
   const API_KEY = '7ff913a997ea42d5bd3bd8d1840aa0e5';
   const STATUS_URL = 'xiaomi_weather_status.json';
   const ICON_BASE = 'img/weather';
   const FALLBACK_CODE = 99;
-  const REFRESH_MS = 5 * 60 * 1000;
+  const REFRESH_MS = 10 * 60 * 1000;
 
   const fetchWithTimeout = (url, ms = 8000, options = {}) => {
     const ctrl = new AbortController();
@@ -77,7 +81,7 @@ async function initWeather() {
   }
 
   async function loadWeather() {
-    setWeatherBackground(); // 每次刷新天气时同步切换背景
+    setWeatherBackground();
 
     const icon = document.getElementById('weather-icon');
     const temp = document.getElementById('weather-temp');
@@ -101,8 +105,6 @@ async function initWeather() {
       const current = parseCurrent(weatherData);
       if (!current) throw new Error('missing current');
       applyWeather({ icon, temp, desc }, statusMap, current);
-
-      // Alerts removed per request
     } catch (e) {
       console.warn('天气获取失败，保留占位', e);
       if (temp) temp.textContent = '--°';
@@ -111,10 +113,8 @@ async function initWeather() {
     }
   }
 
-  window.initWeather = function () {
+  window.initWeather = function() {
     loadWeather();
     setInterval(loadWeather, REFRESH_MS);
   };
-
-  return window.initWeather();
-}
+})();
