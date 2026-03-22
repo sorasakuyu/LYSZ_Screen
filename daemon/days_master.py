@@ -73,6 +73,7 @@ class DaysMaster:
         db = self._external_db
         if db is None:
             db = psycopg2.connect(**self.db_config)
+            db.set_client_encoding('UTF8')
             db.autocommit = True
             created_local = True
         self.ensure_table(db)
@@ -91,6 +92,7 @@ class DaysMaster:
         db = getattr(self.app.state, "db", None)
         if db is None or getattr(db, "closed", 1) != 0:
             db = psycopg2.connect(**self.db_config)
+            db.set_client_encoding('UTF8')
             db.autocommit = True
             self.app.state.db = db
             self.ensure_table(db)
@@ -100,6 +102,7 @@ class DaysMaster:
                     cur.execute("SELECT 1")
             except Exception:
                 db = psycopg2.connect(**self.db_config)
+                db.set_client_encoding('UTF8')
                 db.autocommit = True
                 self.app.state.db = db
                 self.ensure_table(db)

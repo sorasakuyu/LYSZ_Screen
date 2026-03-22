@@ -12,9 +12,11 @@ logger = logging.getLogger(__name__)
 
 # API 配置
 API_KEY = "7ff913a997ea42d5bd3bd8d1840aa0e5"
-API_URL = "https://ny4up3enmw.re.qweatherapi.com/v7/weather/now?location=101120911"
+API_URL_NOW = "https://ny4up3enmw.re.qweatherapi.com/v7/weather/now?location=101120911"
+API_URL_3D = "https://ny4up3enmw.re.qweatherapi.com/v7/weather/3d?location=101120911"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WEATHER_FILE = os.path.join(BASE_DIR, "weather_now.json")
+WEATHER_FILE_NOW = os.path.join(BASE_DIR, "weather_now.json")
+WEATHER_FILE_3D = os.path.join(BASE_DIR, "weather_3d.json")
 
 class WeatherService:
     """天气服务模块，每十分钟获取一次天气数据并提供API接口"""
@@ -32,6 +34,7 @@ class WeatherService:
         """应用生命周期管理"""
         # 启动时立即获取一次天气数据
         asyncio.create_task(self.fetch_weather_data())
+        asyncio.create_task(self.fetch_weather_3d_data())
         # 启动定时任务
         asyncio.create_task(self.scheduled_fetch())
         yield
@@ -41,25 +44,45 @@ class WeatherService:
         while True:
             await asyncio.sleep(600)  # 10分钟
             await self.fetch_weather_data()
+            await self.fetch_weather_3d_data()
 
     async def fetch_weather_data(self):
-        """获取天气数据并存储到文件"""
+        """获取当前天气数据并存储到文件"""
         try:
             headers = {
                 "X-QW-Api-Key": API_KEY,
                 "Accept-Encoding": "gzip, deflate, br"
             }
-            response = requests.get(API_URL, headers=headers, timeout=10)
+            response = requests.get(API_URL_NOW, headers=headers, timeout=10)
             response.raise_for_status()
             data = response.json()
             
             # 存储数据到文件
-            with open(WEATHER_FILE, "w", encoding="utf-8") as f:
+            with open(WEATHER_FILE_NOW, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             
-            logger.info("天气数据获取成功并更新到文件")
+            logger.info("当前天气数据获取成功并更新到文件")
         except Exception as e:
-            logger.error(f"获取天气数据失败: {str(e)}")
+            logger.error(f"获取当前天气数据失败: {str(e)}")
+    
+    async def fetch_weather_3d_data(self):
+        """获取3天天气预报数据并存储到文件"""
+        try:
+            headers = {
+                "X-QW-Api-Key": API_KEY,
+                "Accept-Encoding": "gzip, deflate, br"
+            }
+            response = requests.get(API_URL_3D, headers=headers, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            # 存储数据到文件
+            with open(WEATHER_FILE_3D, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            logger.info("3天天气预报数据获取成功并更新到文件")
+        except Exception as e:
+            logger.error(f"获取3天天气预报数据失败: {str(e)}")
 
     def _register_routes(self) -> None:
         """注册路由"""
@@ -69,19 +92,37 @@ class WeatherService:
         async def get_weather_now():
             """获取当前天气数据"""
             try:
-                if not os.path.exists(WEATHER_FILE):
+                if not os.path.exists(WEATHER_FILE_NOW):
                     # 如果文件不存在，立即获取数据
                     await self.fetch_weather_data()
                     # 再次检查文件是否存在
-                    if not os.path.exists(WEATHER_FILE):
+                    if not os.path.exists(WEATHER_FILE_NOW):
                         raise Exception("获取天气数据失败，文件未创建")
                 
-                with open(WEATHER_FILE, "r", encoding="utf-8") as f:
+                with open(WEATHER_FILE_NOW, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 return data
             except Exception as e:
                 logger.error(f"读取天气数据失败: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"获取天气数据失败: {str(e)}")
+        
+        @app.get("/3d")
+        async def get_weather_3d():
+            """获取3天天气预报数据"""
+            try:
+                if not os.path.exists(WEATHER_FILE_3D):
+                    # 如果文件不存在，立即获取数据
+                    await self.fetch_weather_3d_data()
+                    # 再次检查文件是否存在
+                    if not os.path.exists(WEATHER_FILE_3D):
+                        raise Exception("获取3天天气预报数据失败，文件未创建")
+                
+                with open(WEATHER_FILE_3D, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                return data
+            except Exception as e:
+                logger.error(f"读取3天天气预报数据失败: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"获取3天天气预报数据失败: {str(e)}")
 
 
 api = WeatherService()
