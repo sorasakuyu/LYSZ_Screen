@@ -193,7 +193,10 @@
 				if (!res.ok) throw new Error('fetch failed');
 				const data = await res.json();
 				const url = data && data.url;
-				if (!url) throw new Error('no video url');
+				if (!url || url.startsWith('http://0.0.0.0') || url.startsWith('null')) {
+					window.location.reload();
+					return;
+				}
 				player.src = url;
 				empty.style.display = 'none';
 				player.addEventListener('ended', async () => {
@@ -206,7 +209,6 @@
 						const data = await res.json();
 						
 						if (data && data.mode === 'video') {
-							// 继续停留在当前页面
 						} else {
 							window.location.href = 'http://kaguya.lysz.sorasaku.vip/';
 						}
