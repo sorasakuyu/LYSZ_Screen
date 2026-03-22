@@ -14,6 +14,7 @@ DB_CONFIG = {
     "password": os.getenv("PG_PASSWORD", "JKWLmykskJ6GB6iL"),
     "dbname": os.getenv("PG_DATABASE", "screen"),
     "port": int(os.getenv("PG_PORT", "5432")),
+    "client_encoding": "UTF-8",
 }
 
 class AddRequest(BaseModel):

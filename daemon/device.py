@@ -14,6 +14,7 @@ DB_CONFIG = {
 	"password": os.getenv("PG_PASSWORD", "xx090202"),
 	"dbname": os.getenv("PG_DATABASE", "kaguya2"),
 	"port": int(os.getenv("PG_PORT", "5432")),
+	"client_encoding": "UTF-8",
 }
 
 

@@ -7,7 +7,8 @@ const pool = new Pool({
   port: 5432,
   database: 'auth',
   user: 'auth',
-  password: 'Gxtx8tCSxfnkFsNn'
+  password: 'Gxtx8tCSxfnkFsNn',
+  client_encoding: 'UTF8'
 })
 
 pool.on('error', (err) => {

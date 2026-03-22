@@ -6,6 +6,7 @@ db = psycopg2.connect(
     password='EdbzFZGzs8ZDiMZ4',
     dbname='kaguya2',
     port=5432,
+    client_encoding='UTF-8',
 )
 db.autocommit = True
 
