@@ -18,7 +18,7 @@ DB_CONFIG = {
 	"client_encoding": "UTF-8",
 }
 
-VIDEO_ROOT = os.getenv("VIDEO_ROOT", r"/media/zhngjah/Data/lysz/BigScreen/public/Data/Video")
+VIDEO_ROOT = os.getenv("VIDEO_ROOT", r"D:/Kaguya/public/Data/Video")
 VIDEO_PUBLIC_BASE = os.getenv("VIDEO_PUBLIC_BASE", "http:///home.kaguya.lysz.sorasaku.vip/Data/Video/")
 VIDEO_THUMB_SUBDIR = os.getenv("VIDEO_THUMB_SUBDIR", "thumbs")
 VIDEO_PREVIEW_TIME = float(os.getenv("VIDEO_PREVIEW_TIME", "1"))
