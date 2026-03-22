@@ -87,15 +87,23 @@
 
 .alert-card {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 16px 18px;
+    font-family: 'OpenSans', sans-serif;
+    background: linear-gradient(135deg, #ffe59d80 0%, #9ec5ff80 32%, #9ec5ff80 100%);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .alert-main {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 8px;
     width: 100%;
 }
 
@@ -110,22 +118,26 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    width: 75%;
-    margin-left: auto; /* push info to the right half */
-    align-items: flex-start;
-    overflow: hidden; /* clip scrolling text inside this box */
+    width: 100%;
+    text-align: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.alert-label {
+    font-size: 24px;
+    color: #333;
+    text-align: center;
 }
 
 .alert-title {
     font-size: 60px;
     font-weight: 800;
     color: #000;
-    text-align: left;
-    white-space: nowrap;
-    display: block;
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-family: 'OpenSans', sans-serif;
+    line-height: 1;
+    margin: 0;
+    text-align: center;
 }
 
 .alert-title-inner {
