@@ -29,7 +29,7 @@ import kaguyaSvg from '../img/Kaguya.svg'
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: '仪表盘', adminOnly: false },
-  { path: '/users', icon: Users, label: '用户管理', adminOnly: true },
+  { path: '/users', icon: Users, label: '用户管理', superAdminOnly: true },
   { path: '/days', icon: Calendar, label: '倒数日管理', adminOnly: true },
   { path: '/quotes', icon: Quote, label: '每日金句', adminOnly: true },
   { path: '/notice', icon: Bell, label: '通知设置', adminOnly: true },
@@ -39,7 +39,7 @@ const navItems = [
 ]
 
 export default function AdminLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [announcementOpen, setAnnouncementOpen] = useState(false)
   const [announcement, setAnnouncement] = useState('')
@@ -48,8 +48,13 @@ export default function AdminLayout() {
   const { currentDevice, clearDevice } = useDeviceStore()
   const navigate = useNavigate()
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
+  const isSuperAdmin = user?.role === 'super_admin'
 
-  const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin)
+  const filteredNavItems = navItems.filter(item => {
+    if (item.superAdminOnly) return isSuperAdmin
+    if (item.adminOnly) return isAdmin
+    return true
+  })
 
   const fetchAnnouncement = async () => {
     try {
@@ -173,7 +178,7 @@ export default function AdminLayout() {
         <header className="h-16 glass border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
               className="p-2 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-all"
             >
               <Menu className="w-5 h-5" />
