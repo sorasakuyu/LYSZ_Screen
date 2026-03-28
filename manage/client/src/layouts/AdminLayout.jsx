@@ -30,10 +30,10 @@ import kaguyaSvg from '../img/Kaguya.svg'
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: '仪表盘', adminOnly: false },
   { path: '/users', icon: Users, label: '用户管理', superAdminOnly: true },
-  { path: '/days', icon: Calendar, label: '倒数日管理', adminOnly: true },
-  { path: '/quotes', icon: Quote, label: '每日金句', adminOnly: true },
-  { path: '/notice', icon: Bell, label: '通知设置', adminOnly: true },
-  { path: '/video', icon: Video, label: '视频模式', adminOnly: true },
+  { path: '/days', icon: Calendar, label: '倒数日管理', adminOnly: false },
+  { path: '/quotes', icon: Quote, label: '每日金句', adminOnly: false },
+  { path: '/notice', icon: Bell, label: '通知设置', adminOnly: false },
+  { path: '/video', icon: Video, label: '视频模式', adminOnly: false },
   { path: '/devices', icon: Monitor, label: '设备管理', adminOnly: true },
   { path: '/about', icon: Info, label: '关于', adminOnly: false },
 ]
